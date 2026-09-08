@@ -3,8 +3,8 @@ import 'package:get/get.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:vbox/controllers/settings_controller.dart';
+import 'package:vbox/core/routes/app_routes.dart';
 import 'package:vbox/core/theme/app_colors.dart';
-import 'package:vbox/views/shell/main_shell.dart';
 import 'package:vbox/views/widgets/gradient_button.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -43,7 +43,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       await Get.find<SettingsController>().completeOnboarding();
     }
     await Hive.box('appSettings').put('isFirstLaunch', false);
-    Get.off(() => const MainNavWrapper());
+    Get.offAllNamed(AppRoutes.shell);
   }
 
   Future<void> _onPrimary() async {

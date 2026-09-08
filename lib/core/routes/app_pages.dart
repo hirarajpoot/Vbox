@@ -23,6 +23,7 @@ import 'package:vbox/views/splash/splash_view.dart';
 
 class AppPages {
   static final pages = <GetPage<dynamic>>[
+    GetPage(name: '/', page: () => const SplashScreen()),
     GetPage(name: AppRoutes.splash, page: () => const SplashScreen()),
     GetPage(name: AppRoutes.onboarding, page: () => const OnboardingScreen()),
     GetPage(name: AppRoutes.shell, page: () => const MainNavWrapper()),

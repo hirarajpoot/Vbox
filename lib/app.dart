@@ -5,6 +5,7 @@ import 'package:vbox/controllers/settings_controller.dart';
 import 'package:vbox/core/routes/app_pages.dart';
 import 'package:vbox/core/routes/app_routes.dart';
 import 'package:vbox/core/theme/app_theme.dart';
+import 'package:vbox/views/splash/splash_view.dart';
 
 class VBoxApp extends StatelessWidget {
   const VBoxApp({super.key});
@@ -26,10 +27,14 @@ class VBoxApp extends StatelessWidget {
       title: 'VBox',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
-      defaultTransition: Transition.cupertino,
+      defaultTransition: Transition.fadeIn,
       locale: language,
       fallbackLocale: const Locale('en'),
       initialRoute: AppRoutes.splash,
+      unknownRoute: GetPage(
+        name: '/notfound',
+        page: () => const SplashScreen(),
+      ),
       getPages: AppPages.pages,
     );
   }
