@@ -1,115 +1,140 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:lucide_flutter/lucide_flutter.dart';
-import 'package:vbox/controllers/config_controller.dart';
-import 'package:vbox/core/routes/app_routes.dart';
+import 'package:vbox/controllers/server_controller.dart';
 import 'package:vbox/core/theme/app_colors.dart';
-import 'package:vbox/core/theme/app_theme.dart';
-import 'package:vbox/core/utils/formatters.dart';
-import 'package:vbox/data/models/vpn_config.dart';
 
-class ServerSelectorSheet extends StatelessWidget {
-  const ServerSelectorSheet({super.key});
-
-  static Future<void> show() {
-    return Get.bottomSheet(
-      const ServerSelectorSheet(),
-      isScrollControlled: true,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final configs = Get.find<ConfigController>();
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.72,
-      minChildSize: 0.4,
-      maxChildSize: 0.94,
-      builder: (context, scroll) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
+Future<void> showServerSelectorSheet(BuildContext context) {
+  final servers = Get.find<ServerController>();
+  return showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: AppColors.surface,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (context) {
+      return SafeArea(
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.62,
           child: Column(
             children: [
-              const SizedBox(height: 10),
               Container(
                 width: 40,
                 height: 4,
+                margin: const EdgeInsets.only(top: 12),
                 decoration: BoxDecoration(
-                  color: AppColors.divider,
+                  color: AppColors.muted,
                   borderRadius: BorderRadius.circular(99),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 8, 8),
-                child: Row(
-                  children: [
-                    Expanded(child: Text('Select server', style: AppText.title)),
-                    TextButton(
-                      onPressed: () {
-                        Get.back();
-                        Get.toNamed(AppRoutes.manualAdd);
-                      },
-                      child: const Text('Add'),
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Select Server',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.cream,
                     ),
-                  ],
+                  ),
                 ),
               ),
               Expanded(
                 child: Obx(() {
-                  final items = configs.configs;
+                  final items = servers.servers;
                   if (items.isEmpty) {
-                    return Center(
-                      child: Text('No servers yet', style: AppText.caption),
+                    return const Center(
+                      child: Text(
+                        'No servers yet',
+                        style: TextStyle(color: AppColors.muted),
+                      ),
                     );
                   }
                   return ListView.builder(
-                    controller: scroll,
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
                     itemCount: items.length,
                     itemBuilder: (context, index) {
-                      final config = items[index];
-                      final selected = configs.selected?.id == config.id;
-                      return _tile(configs, config, selected);
+                      final server = items[index];
+                      final selected =
+                          servers.selectedServerId.value == server.id;
+                      return ListTile(
+                        onTap: () {
+                          servers.selectServer(server.id);
+                          Navigator.pop(context);
+                        },
+                        title: Text(
+                          server.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.cream,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              server.ping == null ? 'N/A' : '${server.ping}ms',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: _pingColor(server.ping),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            _RadioDot(selected: selected),
+                          ],
+                        ),
+                      );
                     },
                   );
                 }),
               ),
             ],
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
-  Widget _tile(ConfigController configs, VpnConfig config, bool selected) {
-    return Material(
-      color: Colors.transparent,
-      child: ListTile(
-        onTap: () async {
-          await configs.select(config);
-          Get.back();
-        },
-        leading: Icon(
-          selected ? LucideIcons.shieldCheck : LucideIcons.network,
-          color: selected ? AppColors.mint : AppColors.primary,
-        ),
-        title: Text(config.remark, maxLines: 1, overflow: TextOverflow.ellipsis),
-        subtitle: Text(
-          '${protocolLabel(config.protocol)} · ${formatPing(config.lastPing)}',
-          style: AppText.caption,
-        ),
-        trailing: IconButton(
-          onPressed: () {
-            Get.back();
-            Get.toNamed(AppRoutes.serverDetail, arguments: config.id);
-          },
-          icon: const Icon(LucideIcons.pencil, size: 18),
+class _RadioDot extends StatelessWidget {
+  const _RadioDot({required this.selected});
+
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: selected ? AppColors.copper : AppColors.muted,
+          width: 2,
         ),
       ),
+      child: selected
+          ? Center(
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(
+                  color: AppColors.copper,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            )
+          : null,
     );
   }
+}
+
+Color _pingColor(int? ping) {
+  if (ping == null) return AppColors.muted;
+  if (ping < 100) return AppColors.connected;
+  if (ping <= 300) return AppColors.connecting;
+  return AppColors.danger;
 }

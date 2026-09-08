@@ -1,8 +1,9 @@
 import 'package:get/get.dart';
 import 'package:vbox/core/routes/app_routes.dart';
+import 'package:vbox/data/models/server_model.dart';
 import 'package:vbox/views/configs/add_subscription_view.dart';
 import 'package:vbox/views/configs/import_view.dart';
-import 'package:vbox/views/configs/manual_add_view.dart';
+import 'package:vbox/views/configs/add_server_view.dart';
 import 'package:vbox/views/configs/qr_scan_view.dart';
 import 'package:vbox/views/configs/server_detail_view.dart';
 import 'package:vbox/views/onboarding/onboarding_view.dart';
@@ -24,22 +25,27 @@ class AppPages {
   static final pages = <GetPage<dynamic>>[
     GetPage(name: AppRoutes.splash, page: () => const SplashScreen()),
     GetPage(name: AppRoutes.onboarding, page: () => const OnboardingScreen()),
-    GetPage(name: AppRoutes.shell, page: () => const MainShell()),
+    GetPage(name: AppRoutes.shell, page: () => const MainNavWrapper()),
     GetPage(name: AppRoutes.addSubscription, page: () => const AddSubscriptionView()),
     GetPage(name: AppRoutes.importConfig, page: () => const ImportView()),
-    GetPage(name: AppRoutes.qrScan, page: () => const QrScanView()),
-    GetPage(name: AppRoutes.manualAdd, page: () => const ManualAddView()),
+    GetPage(name: AppRoutes.qrScan, page: () => const QrScanScreen()),
+    GetPage(
+      name: AppRoutes.manualAdd,
+      page: () => AddServerScreen(
+        server: Get.arguments is ServerModel ? Get.arguments as ServerModel : null,
+      ),
+    ),
     GetPage(name: AppRoutes.serverDetail, page: () => const ServerDetailView()),
-    GetPage(name: AppRoutes.tunnel, page: () => const TunnelSettingsView()),
-    GetPage(name: AppRoutes.dns, page: () => const DnsView()),
-    GetPage(name: AppRoutes.routing, page: () => const RoutingView()),
-    GetPage(name: AppRoutes.perApp, page: () => const PerAppView()),
-    GetPage(name: AppRoutes.subscriptions, page: () => const SubscriptionSettingsView()),
-    GetPage(name: AppRoutes.speedTest, page: () => const SpeedTestView()),
-    GetPage(name: AppRoutes.language, page: () => const LanguageView()),
+    GetPage(name: AppRoutes.tunnel, page: () => const TunnelSettingsScreen()),
+    GetPage(name: AppRoutes.dns, page: () => const DnsSettingsScreen()),
+    GetPage(name: AppRoutes.routing, page: () => const RouteSettingsScreen()),
+    GetPage(name: AppRoutes.perApp, page: () => const PerAppProxyScreen()),
+    GetPage(name: AppRoutes.subscriptions, page: () => const SubscriptionSettingsScreen()),
+    GetPage(name: AppRoutes.speedTest, page: () => const SpeedTestScreen()),
+    GetPage(name: AppRoutes.language, page: () => const LanguageScreen()),
     GetPage(name: AppRoutes.logs, page: () => const LogsView()),
-    GetPage(name: AppRoutes.about, page: () => const AboutView()),
-    GetPage(name: AppRoutes.privacy, page: () => const PrivacyView()),
-    GetPage(name: AppRoutes.backup, page: () => const BackupView()),
+    GetPage(name: AppRoutes.about, page: () => const AboutScreen()),
+    GetPage(name: AppRoutes.privacy, page: () => const PrivacyPolicyScreen()),
+    GetPage(name: AppRoutes.backup, page: () => const BackupScreen()),
   ];
 }

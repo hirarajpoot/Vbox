@@ -20,14 +20,14 @@ class VBoxApp extends StatelessWidget {
       ),
     );
 
-    final language = Get.find<SettingsController>().settings.languageCode;
+    final language = Get.find<SettingsController>().locale;
 
     return GetMaterialApp(
       title: 'VBox',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
       defaultTransition: Transition.cupertino,
-      locale: Locale(language),
+      locale: language,
       fallbackLocale: const Locale('en'),
       initialRoute: AppRoutes.splash,
       getPages: AppPages.pages,

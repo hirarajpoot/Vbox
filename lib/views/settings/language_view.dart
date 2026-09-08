@@ -1,21 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:vbox/controllers/settings_controller.dart';
 import 'package:vbox/core/theme/app_colors.dart';
-import 'package:vbox/core/theme/app_theme.dart';
 import 'package:vbox/views/widgets/sub_page_scaffold.dart';
 
-class LanguageView extends StatelessWidget {
-  const LanguageView({super.key});
+class LanguageScreen extends StatelessWidget {
+  const LanguageScreen({super.key});
 
-  static const _languages = [
+  static const options = [
+    ('auto', 'Auto (System Default)'),
     ('en', 'English'),
-    ('ur', 'اردو'),
-    ('ar', 'العربية'),
-    ('zh', '中文'),
-    ('fa', 'فارسی'),
+    ('ur', 'Urdu'),
   ];
+
+  static String labelFor(String code) {
+    return options
+        .firstWhere(
+          (item) => item.$1 == code,
+          orElse: () => options.first,
+        )
+        .$2;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,18 +28,28 @@ class LanguageView extends StatelessWidget {
       title: 'Language',
       body: GetBuilder<SettingsController>(
         builder: (c) => ListView(
-          padding: const EdgeInsets.all(AppSpacing.screen),
-          children: _languages.map((item) {
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 28),
+          children: options.map((item) {
             final selected = c.settings.languageCode == item.$1;
             return ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(item.$2, style: AppText.body.copyWith(fontWeight: FontWeight.w600)),
-              trailing: Icon(
-                selected ? LucideIcons.check : LucideIcons.circle,
-                color: selected ? AppColors.mint : AppColors.divider,
-                size: 20,
+              title: Text(
+                item.$2,
+                style: const TextStyle(
+                  color: AppColors.cream,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-              onTap: () => c.setLanguage(item.$1),
+              trailing: selected
+                  ? const Icon(
+                      Icons.check_circle,
+                      color: AppColors.copper,
+                    )
+                  : null,
+              onTap: () async {
+                await c.setLanguage(item.$1);
+                Get.back();
+              },
             );
           }).toList(),
         ),
@@ -42,3 +57,5 @@ class LanguageView extends StatelessWidget {
     );
   }
 }
+
+typedef LanguageView = LanguageScreen;

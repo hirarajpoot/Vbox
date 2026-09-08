@@ -1,6 +1,7 @@
-import 'package:flutter_v2ray/flutter_v2ray.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:vbox/platform/v2ray_plugin.dart';
 import 'package:vbox/controllers/config_controller.dart';
 import 'package:vbox/controllers/settings_controller.dart';
 import 'package:vbox/data/models/vpn_config.dart';
@@ -18,6 +19,9 @@ class VpnController extends GetxController {
   final coreVersion = '—'.obs;
   final connectedPing = RxnInt();
 
+  var _userStopped = true;
+  var _reconnecting = false;
+
   bool get isConnected => status.value.state.toUpperCase() == 'CONNECTED';
   bool get isConnecting => status.value.state.toUpperCase() == 'CONNECTING';
   bool get isDisconnected => !isConnected && !isConnecting;
@@ -29,10 +33,12 @@ class VpnController extends GetxController {
     _v2ray.onStatus = (value) {
       final previous = status.value.state;
       status.value = value;
-      if (previous.toUpperCase().contains('CONNECT') &&
-          value.state.toUpperCase().contains('DISCONNECT')) {
+      final now = value.state.toUpperCase();
+      final wasConnected = previous.toUpperCase().contains('CONNECT');
+      if (wasConnected && now.contains('DISCONNECT')) {
         _settings.addTraffic(value.upload, value.download);
         _settings.log('Disconnected');
+        _scheduleReconnect();
       }
     };
     _loadCore();
@@ -58,6 +64,7 @@ class VpnController extends GetxController {
 
   Future<void> connect() async {
     if (busy.value) return;
+    _userStopped = false;
     busy.value = true;
     try {
       VpnConfig? target = _configs.selected;
@@ -71,12 +78,14 @@ class VpnController extends GetxController {
       }
       if (!_v2ray.isAvailable) {
         Get.snackbar(
-          'Android required',
-          'VPN core (flutter_v2ray) only runs on an Android phone or emulator.',
+          kIsWeb ? 'Web preview' : 'Android required',
+          kIsWeb
+              ? 'This is a web preview. Connect the VPN from the Android app.'
+              : 'VPN core (flutter_v2ray) only runs on an Android phone or emulator.',
         );
         return;
       }
-      if (GetPlatform.isAndroid) {
+      if (!kIsWeb && GetPlatform.isAndroid) {
         await Permission.notification.request();
       }
       if (!_settings.settings.proxyOnly) {
@@ -98,7 +107,24 @@ class VpnController extends GetxController {
   }
 
   Future<void> disconnect() async {
+    _userStopped = true;
     await _v2ray.stop();
     connectedPing.value = null;
+  }
+
+  void _scheduleReconnect() {
+    if (_userStopped || !_settings.settings.autoReconnect) return;
+    if (_reconnecting || busy.value) return;
+    _reconnecting = true;
+    Future<void>.delayed(const Duration(seconds: 2), () async {
+      try {
+        if (_userStopped || !_settings.settings.autoReconnect) return;
+        if (isConnected || isConnecting) return;
+        await _settings.log('Auto reconnect');
+        await connect();
+      } finally {
+        _reconnecting = false;
+      }
+    });
   }
 }

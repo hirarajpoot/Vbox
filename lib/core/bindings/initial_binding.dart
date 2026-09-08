@@ -28,11 +28,13 @@ class InitialBinding extends Bindings {
       VpnController(v2ray, configs, settings),
       permanent: true,
     );
-    Get.put<ServerController>(ServerController(configs), permanent: true);
+    Get.put<ServerController>(
+      ServerController(storage, configs, settings),
+      permanent: true,
+    );
     Get.put<HomeController>(
       HomeController(
         Get.find<VpnController>(),
-        configs,
         Get.find<ServerController>(),
         settings,
       ),

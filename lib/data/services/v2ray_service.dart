@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_v2ray/flutter_v2ray.dart';
+import 'package:vbox/platform/v2ray_plugin.dart';
 import 'package:vbox/core/constants/lan_bypass.dart';
 import 'package:vbox/data/models/app_settings.dart';
 import 'package:vbox/data/models/vpn_config.dart';
@@ -41,11 +41,11 @@ class V2RayService {
 
   String buildConfiguration(VpnConfig config, AppSettings settings) {
     if (config.isJson || detectJson(config.shareLink)) {
-      return _applyDns(config.shareLink, settings.dnsServers);
+      return _applyDns(config.shareLink, settings);
     }
     final parser = FlutterV2ray.parseFromURL(config.shareLink);
-    if (settings.dnsServers.isNotEmpty) {
-      parser.dns = {'servers': settings.dnsServers};
+    if (settings.enableLocalDns) {
+      parser.dns = _dnsObject(settings);
     }
     return parser.getFullConfiguration();
   }
@@ -74,13 +74,16 @@ class V2RayService {
     }
     final json = buildConfiguration(config, settings);
     final bypass = <String>[
-      if (settings.bypassLan) ...lanBypassSubnets,
-      ...settings.customBypassSubnets.where((s) => s.trim().isNotEmpty),
+      if (settings.routeMode == RouteMode.bypassLan) ...lanBypassSubnets,
+      if (settings.routeMode == RouteMode.custom)
+        ...settings.customBypassSubnets.where((s) => s.trim().isNotEmpty),
     ];
     await engine.startV2Ray(
       remark: config.remark,
       config: json,
-      blockedApps: settings.blockedApps.isEmpty ? null : settings.blockedApps,
+      blockedApps: settings.perAppProxy && settings.blockedApps.isNotEmpty
+          ? settings.blockedApps
+          : null,
       bypassSubnets: bypass.isEmpty ? null : bypass,
       proxyOnly: settings.proxyOnly,
       notificationDisconnectButtonName: 'DISCONNECT',
@@ -121,15 +124,27 @@ class V2RayService {
     }
   }
 
-  String _applyDns(String jsonConfig, List<String> servers) {
+  String _applyDns(String jsonConfig, AppSettings settings) {
+    if (!settings.enableLocalDns) return jsonConfig;
     try {
       final map = jsonDecode(jsonConfig) as Map<String, dynamic>;
-      map['dns'] = {
-        'servers': servers.isEmpty ? ['1.1.1.1'] : servers,
-      };
+      map['dns'] = _dnsObject(settings);
       return jsonEncode(map);
     } catch (_) {
       return jsonConfig;
     }
+  }
+
+  Map<String, dynamic> _dnsObject(AppSettings settings) {
+    final resolver =
+        settings.vpnDns.trim().isEmpty ? '1.1.1.1' : settings.vpnDns.trim();
+    final servers = <dynamic>[
+      if (settings.enableFakeDns) 'fakedns',
+      resolver,
+    ];
+    return {
+      'servers': servers,
+      'queryStrategy': 'UseIP',
+    };
   }
 }

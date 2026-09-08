@@ -1,77 +1,154 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
-import 'package:vbox/core/routes/app_routes.dart';
+import 'package:vbox/controllers/settings_controller.dart';
 import 'package:vbox/core/theme/app_colors.dart';
-import 'package:vbox/core/theme/app_theme.dart';
-import 'package:vbox/views/widgets/ember_card.dart';
-import 'package:vbox/views/widgets/sub_page_scaffold.dart';
+import 'package:vbox/shared/widgets/row_tile.dart';
+import 'package:vbox/shared/widgets/section_card.dart';
+import 'package:vbox/views/settings/about_view.dart';
+import 'package:vbox/views/settings/dns_view.dart';
+import 'package:vbox/views/settings/language_view.dart';
+import 'package:vbox/views/settings/routing_view.dart';
+import 'package:vbox/views/settings/speed_test_view.dart';
+import 'package:vbox/views/settings/subscription_info_view.dart';
+import 'package:vbox/views/settings/subscription_settings_view.dart';
+import 'package:vbox/views/settings/tunnel_settings_view.dart';
 
-class SettingsView extends StatelessWidget {
-  const SettingsView({super.key});
+class SettingsScreen extends StatelessWidget {
+  const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.screen,
-          8,
-          AppSpacing.screen,
-          28,
+    final settings = Get.find<SettingsController>();
+    final deviceId = settings.settings.deviceId ?? '—';
+    return Scaffold(
+      backgroundColor: AppColors.bg,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        automaticallyImplyLeading: false,
+        title: const Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'Settings',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: AppColors.cream,
+            ),
+          ),
         ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         children: [
-          Text('Settings', style: AppText.heading),
-          const SizedBox(height: AppSpacing.section),
-          EmberCard(
+          const _SectionHeader('DEVICE'),
+          SectionCard(
             child: Column(
               children: [
-                SettingsNavTile(
+                GetBuilder<SettingsController>(
+                  builder: (c) => RowTile(
+                    icon: LucideIcons.languages,
+                    title: 'Language',
+                    trailingText: LanguageScreen.labelFor(c.settings.languageCode)
+                        .replaceAll(' (System Default)', ''),
+                    onTap: () => Get.to(() => const LanguageScreen()),
+                  ),
+                ),
+                const Divider(color: AppColors.divider, height: 1, thickness: 1),
+                RowTile(
+                  icon: LucideIcons.smartphone,
+                  title: 'Device ID',
+                  trailingText: _truncateId(deviceId),
+                  showChevron: false,
+                  onTap: () async {
+                    await Clipboard.setData(ClipboardData(text: deviceId));
+                    Get.rawSnackbar(message: 'Copied');
+                  },
+                ),
+                const Divider(color: AppColors.divider, height: 1, thickness: 1),
+                RowTile(
+                  icon: LucideIcons.crown,
+                  title: 'Subscription Info',
+                  onTap: () => Get.to(() => const SubscriptionInfoScreen()),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          const _SectionHeader('GENERAL'),
+          SectionCard(
+            child: Column(
+              children: [
+                RowTile(
                   icon: LucideIcons.shield,
-                  title: 'Tunnel settings',
-                  subtitle: 'VPN mode, smart connect, per-app',
-                  onTap: () => Get.toNamed(AppRoutes.tunnel),
+                  title: 'Tunnel Settings',
+                  onTap: () => Get.to(() => const TunnelSettingsScreen()),
                 ),
-                SettingsNavTile(
+                const Divider(color: AppColors.divider, height: 1, thickness: 1),
+                RowTile(
                   icon: LucideIcons.globe,
-                  title: 'DNS settings',
-                  subtitle: 'Resolvers used on connect',
-                  onTap: () => Get.toNamed(AppRoutes.dns),
+                  title: 'DNS Settings',
+                  onTap: () => Get.to(() => const DnsSettingsScreen()),
                 ),
-                SettingsNavTile(
+                const Divider(color: AppColors.divider, height: 1, thickness: 1),
+                RowTile(
                   icon: LucideIcons.router,
-                  title: 'Route settings',
-                  subtitle: 'Bypass LAN and custom subnets',
-                  onTap: () => Get.toNamed(AppRoutes.routing),
+                  title: 'Route Settings',
+                  onTap: () => Get.to(() => const RouteSettingsScreen()),
                 ),
-                SettingsNavTile(
+                const Divider(color: AppColors.divider, height: 1, thickness: 1),
+                RowTile(
                   icon: LucideIcons.rss,
-                  title: 'Subscription settings',
-                  subtitle: 'Auto-update and manage groups',
-                  onTap: () => Get.toNamed(AppRoutes.subscriptions),
+                  title: 'Subscription Settings',
+                  onTap: () => Get.to(() => const SubscriptionSettingsScreen()),
                 ),
-                SettingsNavTile(
+                const Divider(color: AppColors.divider, height: 1, thickness: 1),
+                RowTile(
                   icon: LucideIcons.gauge,
-                  title: 'Speed test',
-                  subtitle: 'Ping servers and live session speed',
-                  onTap: () => Get.toNamed(AppRoutes.speedTest),
+                  title: 'Speed Test',
+                  onTap: () => Get.to(() => const SpeedTestScreen()),
                 ),
-                SettingsNavTile(
-                  icon: LucideIcons.languages,
-                  title: 'Language',
-                  subtitle: 'App locale',
-                  onTap: () => Get.toNamed(AppRoutes.language),
-                ),
-                SettingsNavTile(
+                const Divider(color: AppColors.divider, height: 1, thickness: 1),
+                RowTile(
                   icon: LucideIcons.info,
                   title: 'About',
-                  subtitle: 'Privacy policy and backup',
-                  onTap: () => Get.toNamed(AppRoutes.about),
+                  onTap: () => Get.to(() => const AboutScreen()),
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  String _truncateId(String id) {
+    if (id.length < 16) return id;
+    return '${id.substring(0, 8)}…${id.substring(id.length - 4)}';
+  }
+}
+
+typedef SettingsView = SettingsScreen;
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader(this.label);
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Text(
+        label.toUpperCase(),
+        style: const TextStyle(
+          color: AppColors.muted,
+          fontSize: 12,
+          letterSpacing: 1,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

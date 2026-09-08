@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:uuid/uuid.dart';
 import 'package:vbox/data/local/storage_service.dart';
 import 'package:vbox/data/models/app_settings.dart';
 import 'package:vbox/data/models/log_entry.dart';
@@ -18,6 +19,10 @@ class SettingsController extends GetxController {
     super.onInit();
     settings = _storage.loadSettings();
     logs.assignAll(_storage.loadLogs());
+    if (settings.deviceId == null || settings.deviceId!.isEmpty) {
+      settings.deviceId = const Uuid().v4();
+      persist();
+    }
   }
 
   Future<void> persist() => _storage.saveSettings(settings);
@@ -54,12 +59,59 @@ class SettingsController extends GetxController {
 
   Future<void> setDns(List<String> servers) async {
     settings.dnsServers = servers.where((s) => s.trim().isNotEmpty).toList();
+    if (settings.dnsServers.isNotEmpty) {
+      settings.vpnDns = settings.dnsServers.first;
+    }
     update();
+    await persist();
+  }
+
+  Future<void> setEnableLocalDns(bool value) async {
+    settings.enableLocalDns = value;
+    update();
+    await persist();
+  }
+
+  Future<void> setEnableFakeDns(bool value) async {
+    settings.enableFakeDns = value;
+    update();
+    await persist();
+  }
+
+  Future<void> setVpnDns(String value) async {
+    final dns = value.trim().isEmpty ? '1.1.1.1' : value.trim();
+    settings.vpnDns = dns;
+    settings.dnsServers = [dns];
+    await persist();
+  }
+
+  Future<void> setPerAppProxy(bool value) async {
+    settings.perAppProxy = value;
+    update();
+    await persist();
+  }
+
+  Future<void> setAutoReconnect(bool value) async {
+    settings.autoReconnect = value;
+    update();
+    await persist();
+  }
+
+  Future<void> setMtuSize(String value) async {
+    final parsed = int.tryParse(value.trim());
+    settings.mtuSize = (parsed == null || parsed <= 0) ? 1500 : parsed;
     await persist();
   }
 
   Future<void> setBlockedApps(List<String> packages) async {
     settings.blockedApps = packages;
+    update();
+    await persist();
+  }
+
+  Future<void> setRouteMode(String mode) async {
+    settings.routeMode = mode;
+    settings.bypassLan = mode == RouteMode.bypassLan;
     update();
     await persist();
   }
@@ -103,10 +155,18 @@ class SettingsController extends GetxController {
     await box.put('isFirstLaunch', false);
   }
 
+  Locale get locale {
+    final code = settings.languageCode;
+    if (code == 'auto' || code.isEmpty) {
+      return Get.deviceLocale ?? const Locale('en');
+    }
+    return Locale(code);
+  }
+
   Future<void> setLanguage(String code) async {
     settings.languageCode = code;
     update();
     await persist();
-    Get.updateLocale(Locale(code));
+    Get.updateLocale(locale);
   }
 }

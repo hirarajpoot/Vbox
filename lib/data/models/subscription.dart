@@ -1,3 +1,5 @@
+typedef SubscriptionModel = Subscription;
+
 class Subscription {
   Subscription({
     required this.id,

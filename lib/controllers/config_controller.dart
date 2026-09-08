@@ -1,7 +1,7 @@
 import 'package:flutter/services.dart';
-import 'package:flutter_v2ray/flutter_v2ray.dart';
 import 'package:get/get.dart';
 import 'package:uuid/uuid.dart';
+import 'package:vbox/controllers/server_controller.dart';
 import 'package:vbox/controllers/settings_controller.dart';
 import 'package:vbox/core/utils/share_links.dart';
 import 'package:vbox/data/local/storage_service.dart';
@@ -21,9 +21,10 @@ class ConfigController extends GetxController {
   final _uuid = const Uuid();
 
   final configs = <VpnConfig>[].obs;
-  final subscriptions = <Subscription>[].obs;
+  final RxList<SubscriptionModel> subscriptions = <SubscriptionModel>[].obs;
   final pinging = false.obs;
   final updating = false.obs;
+  final refreshingId = RxnString();
   final query = ''.obs;
 
   VpnConfig? get selected {
@@ -82,8 +83,7 @@ class ConfigController extends GetxController {
           protocol = 'json';
           remark = 'JSON config';
         } else {
-          final parsed = FlutterV2ray.parseFromURL(link);
-          remark = parsed.remark.trim().isEmpty ? 'Imported' : parsed.remark;
+          remark = remarkFromShareLink(link);
         }
         final config = VpnConfig(
           id: _uuid.v4(),
@@ -157,6 +157,11 @@ class ConfigController extends GetxController {
 
   Future<void> refreshSubscription(Subscription sub) async {
     updating.value = true;
+    refreshingId.value = sub.id;
+    final oldIds = configs
+        .where((c) => c.subscriptionId == sub.id)
+        .map((c) => c.id)
+        .toSet();
     try {
       final links = await _subs.fetchLinks(sub.url);
       await _storage.deleteConfigsBySubscription(sub.id);
@@ -165,9 +170,11 @@ class ConfigController extends GetxController {
       sub.lastUpdated = DateTime.now();
       await _storage.saveSubscription(sub);
       subscriptions.refresh();
+      await _syncServers(removedIds: oldIds);
       await _settings.log('Updated ${sub.name} (${links.length} configs)');
     } finally {
       updating.value = false;
+      refreshingId.value = null;
     }
   }
 
@@ -187,11 +194,25 @@ class ConfigController extends GetxController {
   }
 
   Future<void> deleteSubscription(Subscription sub) async {
+    final oldIds = configs
+        .where((c) => c.subscriptionId == sub.id)
+        .map((c) => c.id)
+        .toSet();
     await _storage.deleteConfigsBySubscription(sub.id);
     await _storage.deleteSubscription(sub.id);
     configs.removeWhere((c) => c.subscriptionId == sub.id);
     subscriptions.removeWhere((s) => s.id == sub.id);
     configs.refresh();
+    await _syncServers(removedIds: oldIds);
+  }
+
+  Future<void> _syncServers({Set<String> removedIds = const {}}) async {
+    if (!Get.isRegistered<ServerController>()) return;
+    final servers = Get.find<ServerController>();
+    if (removedIds.isNotEmpty) {
+      await servers.removeServersByIds(removedIds);
+    }
+    await servers.mergeImportedConfigs();
   }
 
   Future<void> pingOne(VpnConfig config) async {
@@ -263,9 +284,16 @@ class ConfigController extends GetxController {
       _settings.settings.autoUpdateSubs = imported.autoUpdateSubs;
       _settings.settings.smartConnect = imported.smartConnect;
       _settings.settings.selectedConfigId = imported.selectedConfigId;
+      _settings.settings.enableLocalDns = imported.enableLocalDns;
+      _settings.settings.enableFakeDns = imported.enableFakeDns;
+      _settings.settings.vpnDns = imported.vpnDns;
       _settings.settings.dnsServers = imported.dnsServers;
       _settings.settings.blockedApps = imported.blockedApps;
+      _settings.settings.perAppProxy = imported.perAppProxy;
+      _settings.settings.autoReconnect = imported.autoReconnect;
+      _settings.settings.mtuSize = imported.mtuSize;
       _settings.settings.customBypassSubnets = imported.customBypassSubnets;
+      _settings.settings.routeMode = imported.routeMode;
       await _settings.persist();
     }
     configs.assignAll(_storage.loadConfigs());

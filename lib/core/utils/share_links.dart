@@ -18,6 +18,39 @@ bool isShareLink(String raw) {
   return protocol != 'unknown' && protocol != 'json';
 }
 
+String remarkFromShareLink(String link) {
+  final trimmed = link.trim();
+  if (trimmed.isEmpty) return 'Imported';
+
+  if (trimmed.toLowerCase().startsWith('vmess://')) {
+    try {
+      final payload =
+          trimmed.substring(8).split('#').first.split('?').first;
+      final decoded = utf8.decode(
+        base64.decode(_padBase64(payload.replaceAll(RegExp(r'\s'), ''))),
+      );
+      final map = jsonDecode(decoded);
+      if (map is Map &&
+          (map['ps']?.toString().trim().isNotEmpty ?? false)) {
+        return map['ps'].toString();
+      }
+    } catch (_) {}
+  }
+
+  final hashIndex = trimmed.indexOf('#');
+  if (hashIndex >= 0 && hashIndex < trimmed.length - 1) {
+    final fragment = trimmed.substring(hashIndex + 1);
+    try {
+      final decoded = Uri.decodeComponent(fragment);
+      if (decoded.trim().isNotEmpty) return decoded;
+    } catch (_) {
+      if (fragment.trim().isNotEmpty) return fragment;
+    }
+  }
+
+  return 'Imported';
+}
+
 List<String> extractShareLinks(String input) {
   final decoded = _maybeDecodeSubscription(input);
   final links = <String>[];

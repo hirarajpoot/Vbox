@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:vbox/controllers/home_controller.dart';
-import 'package:vbox/controllers/server_controller.dart';
 import 'package:vbox/core/theme/app_colors.dart';
-import 'package:vbox/core/utils/formatters.dart';
+import 'package:vbox/views/home/widgets/server_selector_sheet.dart';
 import 'package:vbox/views/settings/routing_view.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -44,7 +43,7 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     Obx(
                       () => _Card(
-                        onTap: () => _openServerSheet(context, home),
+                        onTap: () => showServerSelectorSheet(context),
                         child: Row(
                           children: [
                             Expanded(
@@ -190,57 +189,6 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-
-  Future<void> _openServerSheet(BuildContext context, HomeController home) async {
-    final servers = Get.find<ServerController>();
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Obx(() {
-            final items = servers.servers;
-            if (items.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.all(28),
-                child: Text(
-                  'No servers yet. Add one from Configs.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColors.muted),
-                ),
-              );
-            }
-            return ListView.builder(
-              padding: const EdgeInsets.fromLTRB(8, 12, 8, 16),
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                final server = items[index];
-                final selected = home.selectedServer.value?.id == server.id;
-                return ListTile(
-                  onTap: () async {
-                    await home.selectServer(server);
-                    if (context.mounted) Navigator.pop(context);
-                  },
-                  leading: Icon(
-                    selected ? LucideIcons.shieldCheck : LucideIcons.network,
-                    color: selected ? AppColors.connected : AppColors.copper,
-                  ),
-                  title: Text(server.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  subtitle: Text(
-                    '${protocolLabel(server.protocol)} · ${formatPing(server.ping)}',
-                    style: const TextStyle(color: AppColors.muted, fontSize: 12),
-                  ),
-                );
-              },
-            );
-          }),
-        );
-      },
     );
   }
 

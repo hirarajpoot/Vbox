@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:get/get.dart';
-import 'package:vbox/controllers/config_controller.dart';
 import 'package:vbox/controllers/server_controller.dart';
 import 'package:vbox/controllers/settings_controller.dart';
 import 'package:vbox/controllers/vpn_controller.dart';
@@ -9,10 +8,9 @@ import 'package:vbox/core/utils/formatters.dart';
 import 'package:vbox/data/models/server_model.dart';
 
 class HomeController extends GetxController {
-  HomeController(this._vpn, this._configs, this._servers, this._settings);
+  HomeController(this._vpn, this._servers, this._settings);
 
   final VpnController _vpn;
-  final ConfigController _configs;
   final ServerController _servers;
   final SettingsController _settings;
 
@@ -32,7 +30,8 @@ class HomeController extends GetxController {
     smartConnect.value = _settings.settings.smartConnect;
     _syncSelected();
     _syncFromVpn();
-    ever(_configs.configs, (_) => _syncSelected());
+    ever(_servers.servers, (_) => _syncSelected());
+    ever(_servers.selectedServerId, (_) => _syncSelected());
     ever(_vpn.status, (_) => _syncFromVpn());
   }
 
@@ -43,9 +42,8 @@ class HomeController extends GetxController {
   }
 
   void _syncSelected() {
-    final config = _configs.selected;
-    selectedServer.value =
-        config == null ? null : ServerModel.fromConfig(config);
+    final id = _servers.selectedServerId.value;
+    selectedServer.value = _servers.servers.firstWhereOrNull((s) => s.id == id);
   }
 
   void _syncFromVpn() {
@@ -82,7 +80,7 @@ class HomeController extends GetxController {
   }
 
   Future<void> selectServer(ServerModel server) async {
-    await _servers.select(server);
+    await _servers.selectServer(server.id);
     _syncSelected();
   }
 

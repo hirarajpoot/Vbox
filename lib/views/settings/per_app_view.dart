@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:installed_apps/app_info.dart';
-import 'package:installed_apps/installed_apps.dart';
+import 'package:vbox/platform/installed_apps_compat.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:vbox/controllers/settings_controller.dart';
 import 'package:vbox/core/theme/app_colors.dart';
-import 'package:vbox/core/theme/app_theme.dart';
-import 'package:vbox/views/widgets/app_toggle.dart';
 import 'package:vbox/views/widgets/sub_page_scaffold.dart';
 
-class PerAppView extends StatefulWidget {
-  const PerAppView({super.key});
+/// Searchable installed-app picker. Uses `installed_apps` on Android
+/// (`device_apps`-style placeholder on web/desktop via the stub).
+class PerAppProxyScreen extends StatefulWidget {
+  const PerAppProxyScreen({super.key});
 
   @override
-  State<PerAppView> createState() => _PerAppViewState();
+  State<PerAppProxyScreen> createState() => _PerAppProxyScreenState();
 }
 
-class _PerAppViewState extends State<PerAppView> {
+typedef PerAppView = PerAppProxyScreen;
+
+class _PerAppProxyScreenState extends State<PerAppProxyScreen> {
   final _query = TextEditingController();
   List<AppInfo> _apps = [];
   var _loading = true;
@@ -38,7 +39,7 @@ class _PerAppViewState extends State<PerAppView> {
   Future<void> _load() async {
     try {
       final apps = await InstalledApps.getInstalledApps(true, false);
-      apps.sort((a, b) => a.name.compareTo(b.name));
+      apps.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
       setState(() {
         _apps = apps;
         _loading = false;
@@ -48,9 +49,9 @@ class _PerAppViewState extends State<PerAppView> {
     }
   }
 
-  Future<void> _toggle(String package) async {
+  Future<void> _toggle(String package, bool usesVpn) async {
     setState(() {
-      if (_blocked.contains(package)) {
+      if (usesVpn) {
         _blocked.remove(package);
       } else {
         _blocked.add(package);
@@ -69,7 +70,7 @@ class _PerAppViewState extends State<PerAppView> {
     }).toList();
 
     return SubPageScaffold(
-      title: 'Per-app proxy',
+      title: 'Per-app Proxy',
       body: Column(
         children: [
           Padding(
@@ -77,44 +78,81 @@ class _PerAppViewState extends State<PerAppView> {
             child: TextField(
               controller: _query,
               onChanged: (_) => setState(() {}),
-              decoration: const InputDecoration(
-                hintText: 'Search installed apps',
-                prefixIcon: Icon(LucideIcons.search, color: AppColors.textSecondary),
+              decoration: InputDecoration(
+                hintText: 'Search apps',
+                prefixIcon: const Icon(
+                  LucideIcons.search,
+                  color: AppColors.muted,
+                ),
+                filled: true,
+                fillColor: AppColors.bgElevated,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppColors.divider),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppColors.divider),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppColors.copper, width: 1.4),
+                ),
               ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
-            child: Text(
-              'On apps stay off the VPN (flutter_v2ray blockedApps).',
-              style: AppText.caption,
             ),
           ),
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.screen,
-                      8,
-                      AppSpacing.screen,
-                      24,
-                    ),
-                    itemCount: visible.length,
-                    itemBuilder: (context, index) {
-                      final app = visible[index];
-                      final pkg = app.packageName;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: AppToggleRow(
-                          title: app.name,
-                          subtitle: pkg,
-                          value: _blocked.contains(pkg),
-                          onChanged: (_) => _toggle(pkg),
+                ? const Center(child: CircularProgressIndicator(color: AppColors.copper))
+                : visible.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'No installed apps found on this device.',
+                          style: TextStyle(color: AppColors.muted),
                         ),
-                      );
-                    },
-                  ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
+                        itemCount: visible.length,
+                        separatorBuilder: (_, _) => const Divider(
+                          color: AppColors.divider,
+                          height: 1,
+                          thickness: 1,
+                        ),
+                        itemBuilder: (context, index) {
+                          final app = visible[index];
+                          final usesVpn = !_blocked.contains(app.packageName);
+                          return CheckboxListTile(
+                            value: usesVpn,
+                            onChanged: (checked) =>
+                                _toggle(app.packageName, checked ?? false),
+                            activeColor: AppColors.copper,
+                            checkColor: AppColors.bg,
+                            controlAffinity: ListTileControlAffinity.trailing,
+                            title: Text(
+                              app.name,
+                              style: const TextStyle(
+                                color: AppColors.cream,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            subtitle: Text(
+                              app.packageName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: AppColors.muted,
+                                fontSize: 12,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
           ),
         ],
       ),
