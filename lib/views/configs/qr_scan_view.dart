@@ -5,6 +5,7 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:vbox/core/theme/app_colors.dart';
 import 'package:vbox/core/utils/parse_server_link.dart';
+import 'package:vbox/shared/widgets/espresso_field.dart';
 import 'package:vbox/views/configs/add_server_view.dart';
 
 class QrScanScreen extends StatefulWidget {
@@ -84,99 +85,189 @@ class _QrScanScreenState extends State<QrScanScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF17110C),
       body: Stack(
         fit: StackFit.expand,
         children: [
-          MobileScanner(controller: _scanner, onDetect: _onDetect),
-          const Center(
-            child: SizedBox(
-              width: 250,
-              height: 250,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.all(Radius.circular(20)),
-                  border: Border.fromBorderSide(
-                    BorderSide(color: AppColors.copper, width: 3),
+          CustomPaint(painter: EspressoFieldPainter(t: 0.18)),
+          SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 4, 20, 8),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: Get.back,
+                        icon: const Icon(
+                          LucideIcons.chevronLeft,
+                          color: AppColors.cream,
+                        ),
+                      ),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'NODE SCAN',
+                              style: TextStyle(
+                                color: AppColors.copperSoft,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 2.2,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Scan QR',
+                              style: TextStyle(
+                                color: AppColors.cream,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.6,
+                                height: 1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ),
-          ),
-          Align(
-            alignment: Alignment.topCenter,
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.6),
-                    Colors.transparent,
-                  ],
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(20, 0, 20, 12),
+                  child: Text(
+                    'Point at a VMess, VLESS, Shadowsocks or Trojan code.',
+                    style: TextStyle(color: AppColors.muted, fontSize: 13),
+                  ),
                 ),
-              ),
-              child: SafeArea(
-                bottom: false,
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: Get.back,
-                      icon: const Icon(LucideIcons.chevronLeft, color: Colors.white),
-                    ),
-                    const Text(
-                      'Scan QR Code',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                child: Row(
-                  children: [
-                    ValueListenableBuilder(
-                      valueListenable: _scanner,
-                      builder: (context, state, _) {
-                        final on = state.torchState == TorchState.on;
-                        return IconButton(
-                          onPressed: _scanner.toggleTorch,
-                          icon: Icon(
-                            on ? LucideIcons.flashlightOff : LucideIcons.flashlight,
-                            color: Colors.white,
-                          ),
-                        );
-                      },
-                    ),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: _fromGallery,
-                      child: const Text(
-                        'Import from Gallery',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 28),
+                    child: AspectRatio(
+                      aspectRatio: 1,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(26),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            MobileScanner(
+                              controller: _scanner,
+                              onDetect: _onDetect,
+                            ),
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(26),
+                                border: Border.all(
+                                  color: AppColors.copper.withValues(alpha: 0.7),
+                                  width: 1.6,
+                                ),
+                              ),
+                            ),
+                            const Center(
+                              child: SizedBox(
+                                width: 196,
+                                height: 196,
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(18),
+                                    ),
+                                    border: Border.fromBorderSide(
+                                      BorderSide(
+                                        color: AppColors.copper,
+                                        width: 2,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ValueListenableBuilder(
+                          valueListenable: _scanner,
+                          builder: (context, state, _) {
+                            final on = state.torchState == TorchState.on;
+                            return _ScanAction(
+                              icon: on
+                                  ? LucideIcons.flashlightOff
+                                  : LucideIcons.flashlight,
+                              label: on ? 'Torch on' : 'Torch',
+                              onTap: _scanner.toggleTorch,
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _ScanAction(
+                          icon: LucideIcons.image,
+                          label: 'Gallery',
+                          onTap: _fromGallery,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ScanAction extends StatelessWidget {
+  const _ScanAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xCC1A1612),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.border.withValues(alpha: 0.85)),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: AppColors.copper, size: 20),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: AppColors.cream,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -1,7 +1,9 @@
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
 import 'package:vbox/controllers/home_controller.dart';
 import 'package:vbox/controllers/server_controller.dart';
 import 'package:vbox/core/theme/app_colors.dart';
@@ -17,48 +19,13 @@ class SpeedTestScreen extends StatefulWidget {
 
 typedef SpeedTestView = SpeedTestScreen;
 
-class _SpeedTestScreenState extends State<SpeedTestScreen>
-    with SingleTickerProviderStateMixin {
+class _SpeedTestScreenState extends State<SpeedTestScreen> {
   var isTesting = false;
   var downloadSpeed = 0.0;
   var uploadSpeed = 0.0;
   var progress = 0.0;
   var _finished = false;
-
-  late final AnimationController _anim;
-  final _random = Random();
-
-  @override
-  void initState() {
-    super.initState();
-    _anim = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 5),
-    )..addListener(() {
-        setState(() => progress = _anim.value);
-      })
-      ..addStatusListener((status) {
-        if (status != AnimationStatus.completed) return;
-        setState(() {
-          isTesting = false;
-          _finished = true;
-          downloadSpeed = 18 + _random.nextDouble() * 72;
-          uploadSpeed = 6 + _random.nextDouble() * 34;
-        });
-      });
-  }
-
-  @override
-  void dispose() {
-    _anim.dispose();
-    super.dispose();
-  }
-
-  String get _phase {
-    if (isTesting) return 'Testing...';
-    if (_finished) return 'Done';
-    return 'Idle';
-  }
+  var _phase = 'Idle';
 
   String get _serverName {
     if (Get.isRegistered<HomeController>()) {
@@ -83,8 +50,88 @@ class _SpeedTestScreenState extends State<SpeedTestScreen>
       progress = 0;
       downloadSpeed = 0;
       uploadSpeed = 0;
+      _phase = 'Download';
     });
-    await _anim.forward(from: 0);
+    try {
+      final down = await _measureDownload((p) {
+        if (!mounted) return;
+        setState(() => progress = p * 0.55);
+      });
+      if (!mounted) return;
+      setState(() {
+        downloadSpeed = down;
+        _phase = 'Upload';
+      });
+      final up = await _measureUpload((p) {
+        if (!mounted) return;
+        setState(() => progress = 0.55 + p * 0.45);
+      });
+      if (!mounted) return;
+      setState(() {
+        uploadSpeed = up;
+        progress = 1;
+        isTesting = false;
+        _finished = true;
+        _phase = 'Done';
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        isTesting = false;
+        _phase = 'Failed';
+      });
+      Get.snackbar('Speed test failed', error.toString());
+    }
+  }
+
+  Future<double> _measureDownload(void Function(double) onProgress) async {
+    final bytesWanted = kIsWeb ? 400000 : 2000000;
+    final uri = kIsWeb
+        ? Uri.parse('https://httpbin.org/bytes/$bytesWanted')
+        : Uri.parse('https://speed.cloudflare.com/__down?bytes=$bytesWanted');
+    final client = http.Client();
+    try {
+      final request = http.Request('GET', uri);
+      final sw = Stopwatch()..start();
+      final response = await client.send(request).timeout(
+            const Duration(seconds: 25),
+          );
+      if (response.statusCode >= 400) {
+        throw Exception('Download HTTP ${response.statusCode}');
+      }
+      var received = 0;
+      await for (final chunk in response.stream) {
+        received += chunk.length;
+        onProgress((received / bytesWanted).clamp(0.0, 1.0));
+      }
+      sw.stop();
+      final seconds = sw.elapsedMilliseconds / 1000.0;
+      if (seconds <= 0 || received <= 0) return 0;
+      return (received * 8) / seconds / 1e6;
+    } finally {
+      client.close();
+    }
+  }
+
+  Future<double> _measureUpload(void Function(double) onProgress) async {
+    final size = kIsWeb ? 200000 : 512000;
+    final payload = Uint8List(size);
+    final uri = kIsWeb
+        ? Uri.parse('https://httpbin.org/post')
+        : Uri.parse('https://speed.cloudflare.com/__up');
+    onProgress(0.15);
+    final sw = Stopwatch()..start();
+    final response = await http
+        .post(uri, body: payload)
+        .timeout(const Duration(seconds: 25));
+    sw.stop();
+    onProgress(1);
+    if (response.statusCode >= 400) {
+      throw Exception('Upload HTTP ${response.statusCode}');
+    }
+    final seconds = sw.elapsedMilliseconds / 1000.0;
+    if (seconds <= 0) return 0;
+    return (size * 8) / seconds / 1e6;
   }
 
   @override
@@ -105,27 +152,32 @@ class _SpeedTestScreenState extends State<SpeedTestScreen>
                   fontSize: 13,
                 ),
               ),
+              const SizedBox(height: 8),
+              const Text(
+                'Measures a real file transfer — not a random number.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.muted, fontSize: 12),
+              ),
               const SizedBox(height: 28),
               SizedBox(
                 width: 180,
                 height: 180,
-                child: AnimatedBuilder(
-                  animation: _anim,
-                  builder: (context, _) {
-                    return CustomPaint(
-                      painter: _ProgressRingPainter(progress: progress),
-                      child: Center(
-                        child: Text(
-                          _phase,
-                          style: const TextStyle(
-                            color: AppColors.cream,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                child: CustomPaint(
+                  painter: _ProgressRingPainter(progress: progress),
+                  child: Center(
+                    child: Text(
+                      isTesting
+                          ? _phase
+                          : _finished
+                              ? 'Done'
+                              : 'Idle',
+                      style: const TextStyle(
+                        color: AppColors.cream,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
-                    );
-                  },
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 32),

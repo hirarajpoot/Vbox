@@ -12,6 +12,7 @@ import 'package:vbox/views/settings/language_view.dart';
 import 'package:vbox/views/settings/routing_view.dart';
 import 'package:vbox/views/settings/speed_test_view.dart';
 import 'package:vbox/views/settings/subscription_info_view.dart';
+import 'package:vbox/views/settings/logs_view.dart';
 import 'package:vbox/views/settings/subscription_settings_view.dart';
 import 'package:vbox/views/settings/tunnel_settings_view.dart';
 
@@ -110,6 +111,12 @@ class SettingsScreen extends StatelessWidget {
                   icon: LucideIcons.gauge,
                   title: 'Speed Test',
                   onTap: () => Get.to(() => const SpeedTestScreen()),
+                ),
+                const Divider(color: AppColors.divider, height: 1, thickness: 1),
+                RowTile(
+                  icon: LucideIcons.scrollText,
+                  title: 'Connection log',
+                  onTap: () => Get.to(() => const LogsView()),
                 ),
                 const Divider(color: AppColors.divider, height: 1, thickness: 1),
                 RowTile(

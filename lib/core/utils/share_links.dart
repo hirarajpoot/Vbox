@@ -103,6 +103,9 @@ String buildVmessLink({
   String host = '',
   String path = '',
   String tls = '',
+  String sni = '',
+  String fingerprint = '',
+  String alpn = '',
 }) {
   final payload = {
     'v': '2',
@@ -117,8 +120,88 @@ String buildVmessLink({
     'host': host,
     'path': path,
     'tls': tls,
+    if (sni.isNotEmpty) 'sni': sni,
+    if (fingerprint.isNotEmpty) 'fp': fingerprint,
+    if (alpn.isNotEmpty) 'alpn': alpn,
   };
   return 'vmess://${base64Encode(utf8.encode(jsonEncode(payload)))}';
+}
+
+String buildVlessLink({
+  required String remark,
+  required String address,
+  required String port,
+  required String uuid,
+  String network = 'tcp',
+  String security = 'none',
+  String host = '',
+  String path = '',
+  String sni = '',
+  String fingerprint = '',
+  String flow = '',
+  String publicKey = '',
+  String shortId = '',
+  String spiderX = '',
+  String serviceName = '',
+  String alpn = '',
+}) {
+  final params = <String, String>{
+    'type': network.isEmpty ? 'tcp' : network,
+    'encryption': 'none',
+    'security': security.isEmpty ? 'none' : security,
+    if (host.isNotEmpty) 'host': host,
+    if (path.isNotEmpty) 'path': path,
+    if (sni.isNotEmpty) 'sni': sni,
+    if (fingerprint.isNotEmpty) 'fp': fingerprint,
+    if (flow.isNotEmpty) 'flow': flow,
+    if (publicKey.isNotEmpty) 'pbk': publicKey,
+    if (shortId.isNotEmpty) 'sid': shortId,
+    if (spiderX.isNotEmpty) 'spx': spiderX,
+    if (serviceName.isNotEmpty) 'serviceName': serviceName,
+    if (alpn.isNotEmpty) 'alpn': alpn,
+  };
+  return Uri(
+    scheme: 'vless',
+    userInfo: uuid,
+    host: address,
+    port: int.tryParse(port),
+    queryParameters: params,
+    fragment: remark,
+  ).toString();
+}
+
+String buildTrojanLink({
+  required String remark,
+  required String address,
+  required String port,
+  required String password,
+  String network = 'tcp',
+  String security = 'tls',
+  String host = '',
+  String path = '',
+  String sni = '',
+  String fingerprint = '',
+  String serviceName = '',
+  String alpn = '',
+}) {
+  final params = <String, String>{
+    'type': network.isEmpty ? 'tcp' : network,
+    'security': security.isEmpty ? 'tls' : security,
+    if (host.isNotEmpty) 'host': host,
+    if (path.isNotEmpty) 'path': path,
+    if (sni.isNotEmpty) 'sni': sni,
+    if (fingerprint.isNotEmpty) 'fp': fingerprint,
+    if (serviceName.isNotEmpty) 'serviceName': serviceName,
+    if (alpn.isNotEmpty) 'alpn': alpn,
+  };
+  return Uri(
+    scheme: 'trojan',
+    userInfo: password,
+    host: address,
+    port: int.tryParse(port),
+    queryParameters: params,
+    fragment: remark,
+  ).toString();
 }
 
 String buildShadowsocksLink({

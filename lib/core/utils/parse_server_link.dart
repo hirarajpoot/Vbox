@@ -11,7 +11,9 @@ ServerModel? parseServerLink(String raw) {
   try {
     if (lower.startsWith('vmess://')) return _parseVmess(link);
     if (lower.startsWith('ss://')) return _parseShadowsocks(link);
-    if (lower.startsWith('vless://')) return _parseUri(link, ServerProtocol.vless);
+    if (lower.startsWith('vless://')) {
+      return _parseUri(link, ServerProtocol.vless);
+    }
     if (lower.startsWith('trojan://')) {
       return _parseUri(link, ServerProtocol.trojan);
     }
@@ -32,6 +34,7 @@ ServerModel _parseVmess(String link) {
   final name = map['ps']?.toString().trim().isNotEmpty == true
       ? map['ps'].toString()
       : remarkFromShareLink(link);
+  final tls = map['tls']?.toString() ?? '';
   return ServerModel(
     id: const Uuid().v4(),
     name: name,
@@ -42,7 +45,20 @@ ServerModel _parseVmess(String link) {
     uuid: uuid,
     group: 'My Servers',
     shareLink: link,
-    encryption: map['scy']?.toString() ?? 'aes-256-gcm',
+    encryption: map['scy']?.toString().isNotEmpty == true
+        ? map['scy'].toString()
+        : 'auto',
+    network: map['net']?.toString().isNotEmpty == true
+        ? map['net'].toString()
+        : 'tcp',
+    streamSecurity: tls.isEmpty ? 'none' : tls,
+    host: map['host']?.toString() ?? '',
+    path: map['path']?.toString() ?? '',
+    sni: map['sni']?.toString() ?? '',
+    fingerprint: map['fp']?.toString() ?? '',
+    alpn: map['alpn']?.toString() ?? '',
+    serviceName: map['path']?.toString() ?? '',
+    alterId: map['aid']?.toString() ?? '0',
   );
 }
 
@@ -99,6 +115,8 @@ ServerModel _parseShadowsocks(String link) {
 ServerModel _parseUri(String link, ServerProtocol protocol) {
   final uri = Uri.parse(link);
   final secret = Uri.decodeComponent(uri.userInfo);
+  final q = uri.queryParameters;
+  final security = q['security']?.trim();
   return ServerModel(
     id: const Uuid().v4(),
     name: remarkFromShareLink(link),
@@ -109,6 +127,20 @@ ServerModel _parseUri(String link, ServerProtocol protocol) {
     uuid: protocol == ServerProtocol.vless ? secret : null,
     group: 'My Servers',
     shareLink: link,
+    network: q['type']?.isNotEmpty == true ? q['type']! : 'tcp',
+    streamSecurity: (security == null || security.isEmpty)
+        ? (protocol == ServerProtocol.trojan ? 'tls' : 'none')
+        : security,
+    host: q['host'] ?? '',
+    path: q['path'] ?? '',
+    sni: q['sni'] ?? '',
+    fingerprint: q['fp'] ?? '',
+    flow: q['flow'] ?? '',
+    publicKey: q['pbk'] ?? '',
+    shortId: q['sid'] ?? '',
+    spiderX: q['spx'] ?? '',
+    serviceName: q['serviceName'] ?? '',
+    alpn: q['alpn'] ?? '',
   );
 }
 
@@ -117,7 +149,9 @@ String? _tryDecode(String value) {
     return utf8.decode(base64.decode(_pad(value.replaceAll(RegExp(r'\s'), ''))));
   } catch (_) {
     try {
-      return utf8.decode(base64Url.decode(_pad(value.replaceAll(RegExp(r'\s'), ''))));
+      return utf8.decode(
+        base64Url.decode(_pad(value.replaceAll(RegExp(r'\s'), ''))),
+      );
     } catch (_) {
       return null;
     }

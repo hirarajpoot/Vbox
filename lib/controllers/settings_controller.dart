@@ -35,6 +35,11 @@ class SettingsController extends GetxController {
 
   Future<void> toggleBypassLan(bool value) async {
     settings.bypassLan = value;
+    if (value) {
+      settings.routeMode = RouteMode.bypassLan;
+    } else if (settings.routeMode == RouteMode.bypassLan) {
+      settings.routeMode = RouteMode.global;
+    }
     update();
     await persist();
   }
@@ -100,6 +105,7 @@ class SettingsController extends GetxController {
   Future<void> setMtuSize(String value) async {
     final parsed = int.tryParse(value.trim());
     settings.mtuSize = (parsed == null || parsed <= 0) ? 1500 : parsed;
+    update();
     await persist();
   }
 
@@ -121,6 +127,42 @@ class SettingsController extends GetxController {
         subnets.map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
     update();
     await persist();
+  }
+
+  Future<void> addCustomSubnet(String raw) async {
+    var value = raw.trim();
+    if (value.isEmpty) return;
+    if (!value.contains('/')) value = '$value/32';
+    if (!_isCidr(value)) {
+      Get.snackbar('Invalid subnet', 'Use CIDR like 10.0.0.0/8');
+      return;
+    }
+    if (settings.customBypassSubnets.contains(value)) return;
+    settings.customBypassSubnets = [...settings.customBypassSubnets, value];
+    settings.routeMode = RouteMode.custom;
+    settings.bypassLan = false;
+    update();
+    await persist();
+  }
+
+  Future<void> removeCustomSubnet(String value) async {
+    settings.customBypassSubnets =
+        settings.customBypassSubnets.where((s) => s != value).toList();
+    update();
+    await persist();
+  }
+
+  bool _isCidr(String value) {
+    final parts = value.split('/');
+    if (parts.length != 2) return false;
+    final octets = parts[0].split('.');
+    if (octets.length != 4) return false;
+    for (final octet in octets) {
+      final n = int.tryParse(octet);
+      if (n == null || n < 0 || n > 255) return false;
+    }
+    final prefix = int.tryParse(parts[1]);
+    return prefix != null && prefix >= 0 && prefix <= 32;
   }
 
   Future<void> addTraffic(int upload, int download) async {

@@ -169,40 +169,52 @@ class _RadioDot extends StatelessWidget {
 class CustomRulesScreen extends StatelessWidget {
   const CustomRulesScreen({super.key});
 
-  static const _placeholders = [
-    'geoip:private → direct',
-    'geosite:cn → direct',
-    'geosite:geolocation-!cn → proxy',
-  ];
-
   @override
   Widget build(BuildContext context) {
     return SubPageScaffold(
       title: 'Custom Rules',
+      actions: [
+        IconButton(
+          tooltip: 'Add subnet',
+          onPressed: () => _addRule(context),
+          icon: const Icon(LucideIcons.plus),
+        ),
+      ],
       body: GetBuilder<SettingsController>(
         builder: (c) {
           final rules = c.settings.customBypassSubnets
               .where((s) => s.trim().isNotEmpty)
               .toList();
-          final items = rules.isEmpty ? _placeholders : rules;
-          final usingPlaceholders = rules.isEmpty;
+          if (rules.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Bypass these CIDR ranges — they skip the tunnel.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.muted, fontSize: 14),
+                    ),
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: () => _addRule(context),
+                      child: const Text('Add subnet'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
           return ListView.separated(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-            itemCount: items.length + (usingPlaceholders ? 1 : 0),
+            itemCount: rules.length,
             separatorBuilder: (_, _) => const SizedBox(height: 10),
             itemBuilder: (context, index) {
-              if (usingPlaceholders && index == 0) {
-                return const Padding(
-                  padding: EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    'Placeholder rules. Saved bypass subnets will appear here.',
-                    style: TextStyle(color: AppColors.muted, fontSize: 12),
-                  ),
-                );
-              }
-              final rule = items[usingPlaceholders ? index - 1 : index];
+              final rule = rules[index];
               return Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 10, 6, 10),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(14),
@@ -221,6 +233,10 @@ class CustomRulesScreen extends StatelessWidget {
                         ),
                       ),
                     ),
+                    IconButton(
+                      onPressed: () => c.removeCustomSubnet(rule),
+                      icon: const Icon(LucideIcons.trash2, size: 18, color: AppColors.danger),
+                    ),
                   ],
                 ),
               );
@@ -229,5 +245,32 @@ class CustomRulesScreen extends StatelessWidget {
         },
       ),
     );
+  }
+
+  Future<void> _addRule(BuildContext context) async {
+    final input = TextEditingController();
+    final raw = await Get.dialog<String>(
+      AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('Bypass subnet'),
+        content: TextField(
+          controller: input,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: '10.0.0.0/8  or  192.168.1.20',
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: Get.back, child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Get.back(result: input.text),
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+    input.dispose();
+    if (raw == null || raw.trim().isEmpty) return;
+    await Get.find<SettingsController>().addCustomSubnet(raw);
   }
 }

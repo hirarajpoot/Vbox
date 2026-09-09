@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:vbox/core/theme/app_colors.dart';
 import 'package:vbox/core/theme/app_theme.dart';
+import 'package:vbox/shared/widgets/espresso_field.dart';
 
 class SubPageScaffold extends StatelessWidget {
   const SubPageScaffold({
@@ -10,17 +11,23 @@ class SubPageScaffold extends StatelessWidget {
     required this.body,
     this.actions,
     this.bottom,
+    this.espressoField = false,
   });
 
   final String title;
   final Widget body;
   final List<Widget>? actions;
   final PreferredSizeWidget? bottom;
+  final bool espressoField;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: espressoField ? const Color(0xFF17110C) : AppColors.bg,
       appBar: AppBar(
+        backgroundColor: espressoField ? Colors.transparent : null,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.of(context).maybePop(),
           icon: const Icon(LucideIcons.chevronLeft),
@@ -29,7 +36,15 @@ class SubPageScaffold extends StatelessWidget {
         actions: actions,
         bottom: bottom,
       ),
-      body: body,
+      body: espressoField
+          ? Stack(
+              fit: StackFit.expand,
+              children: [
+                CustomPaint(painter: EspressoFieldPainter(t: 0.18)),
+                body,
+              ],
+            )
+          : body,
     );
   }
 }

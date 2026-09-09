@@ -33,6 +33,19 @@ class ServerModel {
     this.isFavorite = false,
     this.shareLink = '',
     this.encryption = 'aes-256-gcm',
+    this.network = 'tcp',
+    this.streamSecurity = 'none',
+    this.host = '',
+    this.path = '',
+    this.sni = '',
+    this.fingerprint = '',
+    this.flow = '',
+    this.publicKey = '',
+    this.shortId = '',
+    this.spiderX = '',
+    this.serviceName = '',
+    this.alpn = '',
+    this.alterId = '0',
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -48,6 +61,19 @@ class ServerModel {
   bool isFavorite;
   String shareLink;
   String encryption;
+  String network;
+  String streamSecurity;
+  String host;
+  String path;
+  String sni;
+  String fingerprint;
+  String flow;
+  String publicKey;
+  String shortId;
+  String spiderX;
+  String serviceName;
+  String alpn;
+  String alterId;
   final DateTime createdAt;
 
   String get protocolName {
@@ -93,6 +119,14 @@ class ServerModel {
           port: '$port',
           uuid: uuid ?? '',
           security: encryption,
+          network: network,
+          host: host,
+          path: path.isNotEmpty ? path : serviceName,
+          tls: streamSecurity == 'none' ? '' : streamSecurity,
+          sni: sni,
+          fingerprint: fingerprint,
+          alpn: alpn,
+          alterId: alterId,
         );
       case ServerProtocol.shadowsocks:
         return buildShadowsocksLink(
@@ -103,9 +137,39 @@ class ServerModel {
           password: password,
         );
       case ServerProtocol.vless:
-        return 'vless://${uuid ?? ''}@$address:$port#${Uri.encodeComponent(name)}';
+        return buildVlessLink(
+          remark: name,
+          address: address,
+          port: '$port',
+          uuid: uuid ?? '',
+          network: network,
+          security: streamSecurity,
+          host: host,
+          path: path,
+          sni: sni,
+          fingerprint: fingerprint,
+          flow: flow,
+          publicKey: publicKey,
+          shortId: shortId,
+          spiderX: spiderX,
+          serviceName: serviceName,
+          alpn: alpn,
+        );
       case ServerProtocol.trojan:
-        return 'trojan://$password@$address:$port#${Uri.encodeComponent(name)}';
+        return buildTrojanLink(
+          remark: name,
+          address: address,
+          port: '$port',
+          password: password,
+          network: network,
+          security: streamSecurity == 'none' ? 'tls' : streamSecurity,
+          host: host,
+          path: path,
+          sni: sni,
+          fingerprint: fingerprint,
+          serviceName: serviceName,
+          alpn: alpn,
+        );
     }
   }
 
@@ -146,6 +210,19 @@ class ServerModel {
         'isFavorite': isFavorite,
         'shareLink': shareLink,
         'encryption': encryption,
+        'network': network,
+        'streamSecurity': streamSecurity,
+        'host': host,
+        'path': path,
+        'sni': sni,
+        'fingerprint': fingerprint,
+        'flow': flow,
+        'publicKey': publicKey,
+        'shortId': shortId,
+        'spiderX': spiderX,
+        'serviceName': serviceName,
+        'alpn': alpn,
+        'alterId': alterId,
         'createdAt': createdAt.toIso8601String(),
       };
 
@@ -162,6 +239,19 @@ class ServerModel {
         isFavorite: map['isFavorite'] as bool? ?? false,
         shareLink: map['shareLink'] as String? ?? '',
         encryption: map['encryption'] as String? ?? 'aes-256-gcm',
+        network: map['network'] as String? ?? 'tcp',
+        streamSecurity: map['streamSecurity'] as String? ?? 'none',
+        host: map['host'] as String? ?? '',
+        path: map['path'] as String? ?? '',
+        sni: map['sni'] as String? ?? '',
+        fingerprint: map['fingerprint'] as String? ?? '',
+        flow: map['flow'] as String? ?? '',
+        publicKey: map['publicKey'] as String? ?? '',
+        shortId: map['shortId'] as String? ?? '',
+        spiderX: map['spiderX'] as String? ?? '',
+        serviceName: map['serviceName'] as String? ?? '',
+        alpn: map['alpn'] as String? ?? '',
+        alterId: map['alterId']?.toString() ?? '0',
         createdAt: DateTime.tryParse(map['createdAt'] as String? ?? '') ??
             DateTime.now(),
       );

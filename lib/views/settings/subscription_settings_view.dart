@@ -3,8 +3,11 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:vbox/controllers/config_controller.dart';
+import 'package:vbox/controllers/settings_controller.dart';
 import 'package:vbox/core/theme/app_colors.dart';
 import 'package:vbox/data/models/subscription.dart';
+import 'package:vbox/shared/widgets/custom_switch.dart';
+import 'package:vbox/shared/widgets/section_card.dart';
 import 'package:vbox/views/widgets/gradient_button.dart';
 import 'package:vbox/views/widgets/sub_page_scaffold.dart';
 
@@ -22,7 +25,45 @@ class SubscriptionSettingsScreen extends StatelessWidget {
           icon: const Icon(LucideIcons.plus),
         ),
       ],
-      body: Obx(() {
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+            child: SectionCard(
+              child: GetBuilder<SettingsController>(
+                builder: (c) => Row(
+                  children: [
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Auto-update on launch',
+                            style: TextStyle(
+                              color: AppColors.cream,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Refresh every subscription when the app opens',
+                            style: TextStyle(color: AppColors.muted, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                    CustomSwitch(
+                      value: c.settings.autoUpdateSubs,
+                      onChanged: c.toggleAutoUpdate,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Obx(() {
         final items = configs.subscriptions.toList();
         if (items.isEmpty) {
           return Center(
@@ -62,7 +103,10 @@ class SubscriptionSettingsScreen extends StatelessWidget {
             onDelete: () => _confirmDelete(context, items[index]),
           ),
         );
-      }),
+            }),
+          ),
+        ],
+      ),
     );
   }
 

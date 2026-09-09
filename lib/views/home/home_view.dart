@@ -212,6 +212,20 @@ class _SessionHero extends StatelessWidget {
               textAlign: TextAlign.center,
               style: const TextStyle(color: AppColors.muted, fontSize: 13),
             ),
+            if (connected &&
+                home.hopPing.value != null &&
+                home.hopPing.value! >= 0) ...[
+              const SizedBox(height: 6),
+              Text(
+                '${home.hopPing.value}ms hop',
+                style: const TextStyle(
+                  color: AppColors.copperSoft,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.6,
+                ),
+              ),
+            ],
             const SizedBox(height: 18),
             Row(
               children: [

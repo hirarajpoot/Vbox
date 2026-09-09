@@ -1,5 +1,5 @@
-import 'dart:math';
-
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:vbox/controllers/config_controller.dart';
 import 'package:vbox/controllers/settings_controller.dart';
@@ -17,6 +17,8 @@ class ServerController extends GetxController {
   final RxList<ServerModel> servers = <ServerModel>[].obs;
   final RxString selectedServerId = ''.obs;
   final Rx<ServerSort> sort = ServerSort.date.obs;
+  final query = ''.obs;
+  final pingingIds = <String>{}.obs;
 
   @override
   void onInit() {
@@ -73,9 +75,53 @@ class ServerController extends GetxController {
   }
 
   Future<void> testPing(ServerModel server) async {
-    await Future<void>.delayed(const Duration(milliseconds: 700));
-    server.ping = 35 + Random().nextInt(280);
-    await addServer(server);
+    pingingIds.add(server.id);
+    pingingIds.refresh();
+    try {
+      var config = _configs.byId(server.id);
+      if (config == null) {
+        await _mirrorConfig(server);
+        config = _configs.byId(server.id) ?? server.toVpnConfig();
+      }
+      await _configs.pingOne(config);
+      final delay = config.lastPing ?? -1;
+      server.ping = delay >= 0 ? delay : null;
+      await addServer(server);
+      if (delay < 0) {
+        Get.snackbar(
+          'Ping failed',
+          kIsWeb
+              ? 'Real delay needs the Android VPN core.'
+              : 'This node did not answer.',
+        );
+      }
+    } finally {
+      pingingIds.remove(server.id);
+      pingingIds.refresh();
+    }
+  }
+
+  Future<void> testAllPings() async {
+    if (servers.isEmpty) return;
+    await _configs.pingAll();
+    for (final server in servers) {
+      final config = _configs.byId(server.id);
+      if (config == null) continue;
+      final delay = config.lastPing ?? -1;
+      server.ping = delay >= 0 ? delay : null;
+      await _storage.saveServer(server);
+    }
+    _applySort();
+  }
+
+  Future<int> importFromClipboard() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final raw = data?.text?.trim() ?? '';
+    if (raw.isEmpty) {
+      throw Exception('Clipboard is empty');
+    }
+    await importLink(raw);
+    return extractShareLinks(raw).length;
   }
 
   Future<void> removeServersByIds(Set<String> ids) async {
@@ -109,8 +155,15 @@ class ServerController extends GetxController {
   }
 
   Map<String, List<ServerModel>> get grouped {
+    final q = query.value.trim().toLowerCase();
     final map = <String, List<ServerModel>>{};
     for (final server in servers) {
+      if (q.isNotEmpty &&
+          !server.name.toLowerCase().contains(q) &&
+          !server.protocolName.toLowerCase().contains(q) &&
+          !server.group.toLowerCase().contains(q)) {
+        continue;
+      }
       map.putIfAbsent(server.group, () => []).add(server);
     }
     return map;

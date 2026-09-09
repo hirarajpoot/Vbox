@@ -41,13 +41,13 @@ class V2RayService {
 
   String buildConfiguration(VpnConfig config, AppSettings settings) {
     if (config.isJson || detectJson(config.shareLink)) {
-      return _applyDns(config.shareLink, settings);
+      return _applyMtu(_applyDns(config.shareLink, settings), settings.mtuSize);
     }
     final parser = FlutterV2ray.parseFromURL(config.shareLink);
     if (settings.enableLocalDns) {
       parser.dns = _dnsObject(settings);
     }
-    return parser.getFullConfiguration();
+    return _applyMtu(parser.getFullConfiguration(), settings.mtuSize);
   }
 
   String remarkOf(VpnConfig config) {
@@ -132,6 +132,36 @@ class V2RayService {
       return jsonEncode(map);
     } catch (_) {
       return jsonConfig;
+    }
+  }
+
+  String _applyMtu(String jsonConfig, int mtu) {
+    final size = mtu <= 0 ? 1500 : mtu;
+    try {
+      final map = jsonDecode(jsonConfig) as Map<String, dynamic>;
+      _walkMtu(map, size);
+      return jsonEncode(map);
+    } catch (_) {
+      return jsonConfig;
+    }
+  }
+
+  void _walkMtu(dynamic node, int mtu) {
+    if (node is Map) {
+      if (node.containsKey('mtu')) {
+        node['mtu'] = mtu;
+      }
+      final kcp = node['kcpSettings'];
+      if (kcp is Map) {
+        kcp['mtu'] = mtu;
+      }
+      for (final value in node.values) {
+        _walkMtu(value, mtu);
+      }
+    } else if (node is List) {
+      for (final value in node) {
+        _walkMtu(value, mtu);
+      }
     }
   }
 

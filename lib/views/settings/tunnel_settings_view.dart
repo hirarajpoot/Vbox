@@ -67,6 +67,20 @@ class _TunnelSettingsScreenState extends State<TunnelSettingsScreen> {
                     onChanged: c.setAutoReconnect,
                   ),
                   const Divider(color: AppColors.divider, height: 24, thickness: 1),
+                  _ToggleBlock(
+                    title: 'Auto Connect',
+                    description: 'Start the tunnel when the app opens',
+                    value: c.settings.autoConnect,
+                    onChanged: c.toggleAutoConnect,
+                  ),
+                  const Divider(color: AppColors.divider, height: 24, thickness: 1),
+                  _ToggleBlock(
+                    title: 'Proxy only',
+                    description: 'Skip system VPN — use local SOCKS/HTTP only',
+                    value: c.settings.proxyOnly,
+                    onChanged: c.toggleProxyOnly,
+                  ),
+                  const Divider(color: AppColors.divider, height: 24, thickness: 1),
                   Row(
                     children: [
                       const Expanded(

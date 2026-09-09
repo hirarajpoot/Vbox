@@ -21,6 +21,7 @@ class HomeController extends GetxController {
   final RxString downloadSpeed = '0 KB/s'.obs;
   final Rx<ServerModel?> selectedServer = Rx<ServerModel?>(null);
   final RxBool smartConnect = false.obs;
+  final hopPing = RxnInt();
 
   Timer? _ticker;
 
@@ -33,6 +34,7 @@ class HomeController extends GetxController {
     ever(_servers.servers, (_) => _syncSelected());
     ever(_servers.selectedServerId, (_) => _syncSelected());
     ever(_vpn.status, (_) => _syncFromVpn());
+    ever(_vpn.connectedPing, (value) => hopPing.value = value);
   }
 
   @override
@@ -50,6 +52,7 @@ class HomeController extends GetxController {
     final wasConnected = isConnected.value;
     isConnected.value = _vpn.isConnected;
     isConnecting.value = _vpn.isConnecting;
+    hopPing.value = _vpn.connectedPing.value;
     final status = _vpn.status.value;
     uploadSpeed.value = formatSpeed(status.uploadSpeed);
     downloadSpeed.value = formatSpeed(status.downloadSpeed);

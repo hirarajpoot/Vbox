@@ -33,7 +33,6 @@ class _PublicServersScreenState extends State<PublicServersScreen> {
     setState(() {
       _loading = true;
       _error = '';
-      _links = [];
     });
     try {
       final links = await _list.fetchLatest(_source);
@@ -45,7 +44,7 @@ class _PublicServersScreenState extends State<PublicServersScreen> {
     } catch (error) {
       if (!mounted) return;
       setState(() {
-        _error = error.toString();
+        _error = error.toString().replaceFirst('Exception: ', '');
         _loading = false;
       });
     }
@@ -74,6 +73,7 @@ class _PublicServersScreenState extends State<PublicServersScreen> {
   @override
   Widget build(BuildContext context) {
     return SubPageScaffold(
+      espressoField: true,
       title: 'Latest public servers',
       actions: [
         IconButton(
@@ -170,9 +170,9 @@ class _PublicServersScreenState extends State<PublicServersScreen> {
         return Container(
           padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: const Color(0xCC1A1612),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.divider),
+            border: Border.all(color: AppColors.border.withValues(alpha: 0.85)),
           ),
           child: Row(
             children: [
