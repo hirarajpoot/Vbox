@@ -86,6 +86,7 @@ class _ManualAddViewState extends State<ManualAddView>
   @override
   Widget build(BuildContext context) {
     return SubPageScaffold(
+      kicker: 'HAND ENTRY',
       title: 'Add server',
       bottom: TabBar(
         controller: _tabs,

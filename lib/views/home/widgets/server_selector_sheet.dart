@@ -7,9 +7,9 @@ Future<void> showServerSelectorSheet(BuildContext context) {
   final servers = Get.find<ServerController>();
   return showModalBottomSheet<void>(
     context: context,
-    backgroundColor: AppColors.surface,
+    backgroundColor: const Color(0xFF1A1612),
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
     ),
     builder: (context) {
       return SafeArea(
@@ -22,20 +22,21 @@ Future<void> showServerSelectorSheet(BuildContext context) {
                 height: 4,
                 margin: const EdgeInsets.only(top: 12),
                 decoration: BoxDecoration(
-                  color: AppColors.muted,
+                  color: AppColors.border,
                   borderRadius: BorderRadius.circular(99),
                 ),
               ),
               const Padding(
-                padding: EdgeInsets.all(16),
+                padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'Select Server',
+                    'SELECT EXIT',
                     style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.cream,
+                      color: AppColors.copperSoft,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 2,
                     ),
                   ),
                 ),
@@ -52,39 +53,61 @@ Future<void> showServerSelectorSheet(BuildContext context) {
                     );
                   }
                   return ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     itemCount: items.length,
                     itemBuilder: (context, index) {
                       final server = items[index];
                       final selected =
                           servers.selectedServerId.value == server.id;
-                      return ListTile(
-                        onTap: () {
-                          servers.selectServer(server.id);
-                          Navigator.pop(context);
-                        },
-                        title: Text(
-                          server.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: AppColors.cream,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              server.ping == null ? 'N/A' : '${server.ping}ms',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: _pingColor(server.ping),
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              servers.selectServer(server.id);
+                              Navigator.pop(context);
+                            },
+                            borderRadius: BorderRadius.circular(16),
+                            child: Ink(
+                              padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xCC17110C),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: selected
+                                      ? AppColors.copper.withValues(alpha: 0.7)
+                                      : AppColors.copper.withValues(alpha: 0.18),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      server.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: AppColors.cream,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  Text(
+                                    server.ping == null
+                                        ? 'N/A'
+                                        : '${server.ping}ms',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: _pingColor(server.ping),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  _RadioDot(selected: selected),
+                                ],
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            _RadioDot(selected: selected),
-                          ],
+                          ),
                         ),
                       );
                     },

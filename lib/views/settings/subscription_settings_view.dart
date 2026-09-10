@@ -18,7 +18,8 @@ class SubscriptionSettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final configs = Get.find<ConfigController>();
     return SubPageScaffold(
-      title: 'Subscription Settings',
+      kicker: 'FEED BAY',
+      title: 'Subscriptions',
       actions: [
         IconButton(
           onPressed: () => _showAddDialog(context),
@@ -258,9 +259,9 @@ class _SubscriptionCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.divider),
+        color: const Color(0xCC1A1612),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.copper.withValues(alpha: 0.22)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

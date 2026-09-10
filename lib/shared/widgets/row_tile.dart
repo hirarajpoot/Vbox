@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:vbox/core/theme/app_colors.dart';
 
 class RowTile extends StatelessWidget {
@@ -23,11 +24,23 @@ class RowTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Row(
             children: [
-              Icon(icon, color: AppColors.copper, size: 22),
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.copper.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: AppColors.copper.withValues(alpha: 0.28),
+                  ),
+                ),
+                child: Icon(icon, color: AppColors.copper, size: 18),
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -35,7 +48,7 @@ class RowTile extends StatelessWidget {
                   style: const TextStyle(
                     color: AppColors.cream,
                     fontSize: 15,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -46,7 +59,11 @@ class RowTile extends StatelessWidget {
                 ),
               if (showChevron) ...[
                 const SizedBox(width: 6),
-                const Icon(Icons.chevron_right, color: AppColors.muted),
+                const Icon(
+                  LucideIcons.chevronRight,
+                  color: AppColors.muted,
+                  size: 18,
+                ),
               ],
             ],
           ),

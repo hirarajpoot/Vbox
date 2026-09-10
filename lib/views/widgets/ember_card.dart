@@ -18,30 +18,19 @@ class EmberCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.surface,
-      elevation: 0,
-      shadowColor: Colors.transparent,
-      borderRadius: BorderRadius.circular(AppSpacing.radius),
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppSpacing.radius),
+        borderRadius: BorderRadius.circular(22),
         child: Ink(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppSpacing.radius),
+            color: const Color(0xCC1A1612),
+            borderRadius: BorderRadius.circular(22),
             border: Border.all(
               color: glow
-                  ? AppColors.primary.withValues(alpha: 0.45)
-                  : AppColors.divider,
+                  ? AppColors.copper.withValues(alpha: 0.55)
+                  : AppColors.copper.withValues(alpha: 0.22),
             ),
-            boxShadow: [
-              ...AppShadows.card,
-              if (glow)
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.18),
-                  blurRadius: 18,
-                  offset: const Offset(0, 6),
-                ),
-            ],
           ),
           child: Padding(padding: padding, child: child),
         ),

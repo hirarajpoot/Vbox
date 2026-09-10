@@ -35,6 +35,7 @@ class _DnsSettingsScreenState extends State<DnsSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return SubPageScaffold(
+      kicker: 'NAME BAY',
       title: 'DNS Settings',
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),

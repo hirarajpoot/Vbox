@@ -73,8 +73,8 @@ class _PublicServersScreenState extends State<PublicServersScreen> {
   @override
   Widget build(BuildContext context) {
     return SubPageScaffold(
-      espressoField: true,
-      title: 'Latest public servers',
+      kicker: 'OPEN RACK',
+      title: 'Public nodes',
       actions: [
         IconButton(
           onPressed: _loading ? null : _load,

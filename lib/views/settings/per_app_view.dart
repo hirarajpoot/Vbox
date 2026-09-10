@@ -70,6 +70,7 @@ class _PerAppProxyScreenState extends State<PerAppProxyScreen> {
     }).toList();
 
     return SubPageScaffold(
+      kicker: 'APP GATE',
       title: 'Per-app Proxy',
       body: Column(
         children: [
@@ -78,29 +79,40 @@ class _PerAppProxyScreenState extends State<PerAppProxyScreen> {
             child: TextField(
               controller: _query,
               onChanged: (_) => setState(() {}),
+              style: const TextStyle(color: AppColors.cream, fontSize: 14),
+              cursorColor: AppColors.copper,
               decoration: InputDecoration(
                 hintText: 'Search apps',
+                hintStyle: const TextStyle(color: AppColors.muted, fontSize: 13),
                 prefixIcon: const Icon(
                   LucideIcons.search,
                   color: AppColors.muted,
+                  size: 18,
                 ),
                 filled: true,
-                fillColor: AppColors.bgElevated,
+                fillColor: const Color(0xCC1A1612),
+                isDense: true,
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
+                  horizontal: 12,
+                  vertical: 14,
                 ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.divider),
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide(
+                    color: AppColors.border.withValues(alpha: 0.85),
+                  ),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.divider),
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide(
+                    color: AppColors.border.withValues(alpha: 0.85),
+                  ),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.copper, width: 1.4),
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide(
+                    color: AppColors.copper.withValues(alpha: 0.7),
+                  ),
                 ),
               ),
             ),

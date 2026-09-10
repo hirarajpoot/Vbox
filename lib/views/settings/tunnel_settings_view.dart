@@ -37,6 +37,7 @@ class _TunnelSettingsScreenState extends State<TunnelSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return SubPageScaffold(
+      kicker: 'TUNNEL BAY',
       title: 'Tunnel Settings',
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),

@@ -53,6 +53,7 @@ class _AboutScreenState extends State<AboutScreen> {
   Widget build(BuildContext context) {
     final vpn = Get.find<VpnController>();
     return SubPageScaffold(
+      kicker: 'HOUSE MARK',
       title: 'About',
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),

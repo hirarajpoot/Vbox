@@ -37,34 +37,42 @@ class _MainNavWrapperState extends State<MainNavWrapper> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: const Color(0xFF17110C),
       body: IndexedStack(index: _index, children: _pages),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _index,
-        onTap: _go,
-        backgroundColor: AppColors.surface,
-        selectedItemColor: AppColors.copper,
-        unselectedItemColor: AppColors.muted,
-        showSelectedLabels: true,
-        showUnselectedLabels: false,
-        type: BottomNavigationBarType.fixed,
-        elevation: 0,
-        selectedFontSize: 12,
-        unselectedFontSize: 12,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(LucideIcons.zap),
-            label: 'Home',
+      bottomNavigationBar: DecoratedBox(
+        decoration: BoxDecoration(
+          color: const Color(0xF21A1612),
+          border: Border(
+            top: BorderSide(color: AppColors.copper.withValues(alpha: 0.22)),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(LucideIcons.network),
-            label: 'Configs',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(LucideIcons.settings),
-            label: 'Settings',
-          ),
-        ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _index,
+          onTap: _go,
+          backgroundColor: Colors.transparent,
+          selectedItemColor: AppColors.copperSoft,
+          unselectedItemColor: AppColors.muted,
+          showSelectedLabels: true,
+          showUnselectedLabels: false,
+          type: BottomNavigationBarType.fixed,
+          elevation: 0,
+          selectedFontSize: 11,
+          unselectedFontSize: 11,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(LucideIcons.zap),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(LucideIcons.network),
+              label: 'Configs',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(LucideIcons.settings),
+              label: 'Settings',
+            ),
+          ],
+        ),
       ),
     );
   }

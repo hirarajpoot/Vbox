@@ -12,6 +12,7 @@ class RouteSettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SubPageScaffold(
+      kicker: 'PATH BAY',
       title: 'Route Settings',
       body: GetBuilder<SettingsController>(
         builder: (c) {
@@ -81,10 +82,12 @@ class _ModeCard extends StatelessWidget {
           child: Ink(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(14),
+              color: const Color(0xCC1A1612),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: selected ? AppColors.copper : AppColors.divider,
+                color: selected
+                    ? AppColors.copper.withValues(alpha: 0.7)
+                    : AppColors.copper.withValues(alpha: 0.22),
                 width: selected ? 1.5 : 1,
               ),
             ),
@@ -172,6 +175,7 @@ class CustomRulesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SubPageScaffold(
+      kicker: 'RULE BAY',
       title: 'Custom Rules',
       actions: [
         IconButton(
@@ -216,9 +220,11 @@ class CustomRulesScreen extends StatelessWidget {
               return Container(
                 padding: const EdgeInsets.fromLTRB(16, 10, 6, 10),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.divider),
+                  color: const Color(0xCC1A1612),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: AppColors.copper.withValues(alpha: 0.22),
+                  ),
                 ),
                 child: Row(
                   children: [

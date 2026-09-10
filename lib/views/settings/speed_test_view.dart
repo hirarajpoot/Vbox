@@ -137,6 +137,7 @@ class _SpeedTestScreenState extends State<SpeedTestScreen> {
   @override
   Widget build(BuildContext context) {
     return SubPageScaffold(
+      kicker: 'LINE TEST',
       title: 'Speed Test',
       body: Center(
         child: SingleChildScrollView(
@@ -223,9 +224,9 @@ class _SpeedStat extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.divider),
+        color: const Color(0xCC1A1612),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.copper.withValues(alpha: 0.22)),
       ),
       child: Column(
         children: [

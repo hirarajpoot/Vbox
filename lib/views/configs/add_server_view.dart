@@ -182,7 +182,7 @@ class _AddServerScreenState extends State<AddServerScreen> {
   @override
   Widget build(BuildContext context) {
     return SubPageScaffold(
-      espressoField: true,
+      kicker: _isEdit ? 'NODE EDIT' : 'NODE FORGE',
       title: _isEdit ? 'Edit Server' : 'Add Server',
       body: Column(
         children: [

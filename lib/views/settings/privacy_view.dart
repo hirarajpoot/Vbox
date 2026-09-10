@@ -18,7 +18,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-  body { font-family: sans-serif; background: #0B0908; color: #A89888; padding: 16px; line-height: 1.55; }
+  body { font-family: sans-serif; background: #17110C; color: #A89888; padding: 16px; line-height: 1.55; }
   h1 { color: #F6EDE3; font-size: 22px; }
   h2 { color: #E08A3D; font-size: 15px; }
 </style>
@@ -44,7 +44,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
     if (kIsWeb) return;
     try {
       _controller = WebViewController()
-        ..setBackgroundColor(AppColors.bg)
+        ..setBackgroundColor(const Color(0xFF17110C))
         ..loadHtmlString(_html);
     } catch (_) {}
   }
@@ -53,6 +53,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
   Widget build(BuildContext context) {
     if (kIsWeb || _controller == null) return const PrivacyView();
     return SubPageScaffold(
+      kicker: 'LEDGER',
       title: 'Privacy Policy',
       body: WebViewWidget(controller: _controller!),
     );
@@ -65,7 +66,8 @@ class PrivacyView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SubPageScaffold(
-      title: 'Privacy policy',
+      kicker: 'LEDGER',
+      title: 'Privacy',
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.screen,
