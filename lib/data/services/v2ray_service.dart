@@ -40,14 +40,14 @@ class V2RayService {
   }
 
   String buildConfiguration(VpnConfig config, AppSettings settings) {
+    late String json;
     if (config.isJson || detectJson(config.shareLink)) {
-      return _applyMtu(_applyDns(config.shareLink, settings), settings.mtuSize);
+      json = config.shareLink;
+    } else {
+      json = FlutterV2ray.parseFromURL(config.shareLink).getFullConfiguration();
     }
-    final parser = FlutterV2ray.parseFromURL(config.shareLink);
-    if (settings.enableLocalDns) {
-      parser.dns = _dnsObject(settings);
-    }
-    return _applyMtu(parser.getFullConfiguration(), settings.mtuSize);
+    json = _enableTunnelDns(json, settings);
+    return _applyMtu(json, settings.mtuSize);
   }
 
   String remarkOf(VpnConfig config) {
@@ -99,7 +99,10 @@ class V2RayService {
       final engine = _engine;
       if (engine == null) return -1;
       final json = buildConfiguration(config, settings);
-      return await engine.getServerDelay(config: json);
+      return await engine.getServerDelay(
+        config: json,
+        url: 'https://www.gstatic.com/generate_204',
+      );
     } catch (_) {
       return -1;
     }
@@ -107,7 +110,10 @@ class V2RayService {
 
   Future<int> pingConnected() async {
     try {
-      return await _engine?.getConnectedServerDelay() ?? -1;
+      return await _engine?.getConnectedServerDelay(
+            url: 'https://www.gstatic.com/generate_204',
+          ) ??
+          -1;
     } catch (_) {
       return -1;
     }
@@ -124,13 +130,54 @@ class V2RayService {
     }
   }
 
-  String _applyDns(String jsonConfig, AppSettings settings) {
-    if (!settings.enableLocalDns) return jsonConfig;
+  /// V2Box-style DNS for tun2socks: Android VpnService can only addDnsServer()
+  /// real IPs (string entries first). FakeDNS is an object so Java skips it
+  /// after the IPs are already installed. UDP 53 is handed to Xray's DNS
+  /// module instead of being forwarded as UDP through the VMess node.
+  String _enableTunnelDns(String jsonConfig, AppSettings settings) {
     try {
-      final map = jsonDecode(jsonConfig) as Map<String, dynamic>;
+      final map = jsonDecode(jsonConfig);
+      if (map is! Map<String, dynamic>) return jsonConfig;
+
       map['dns'] = _dnsObject(settings);
+
+      final inbounds = map['inbounds'];
+      if (inbounds is List) {
+        for (final inbound in inbounds) {
+          if (inbound is! Map) continue;
+          inbound['sniffing'] = {
+            'enabled': true,
+            'destOverride': ['http', 'tls', 'fakedns'],
+          };
+        }
+      }
+
+      final outbounds = map['outbounds'];
+      if (outbounds is List) {
+        outbounds.removeWhere(
+          (item) => item is Map && item['tag'] == 'dns-out',
+        );
+        outbounds.add({
+          'tag': 'dns-out',
+          'protocol': 'dns',
+        });
+      }
+
+      map['routing'] = {
+        'domainStrategy': 'IPIfNonMatch',
+        'rules': [
+          {
+            'type': 'field',
+            'network': 'udp',
+            'port': '53',
+            'outboundTag': 'dns-out',
+          },
+        ],
+      };
+
       return jsonEncode(map);
-    } catch (_) {
+    } catch (error, stack) {
+      debugPrint('V2Ray tunnel DNS skipped: $error\n$stack');
       return jsonConfig;
     }
   }
@@ -166,15 +213,29 @@ class V2RayService {
   }
 
   Map<String, dynamic> _dnsObject(AppSettings settings) {
-    final resolver =
-        settings.vpnDns.trim().isEmpty ? '1.1.1.1' : settings.vpnDns.trim();
-    final servers = <dynamic>[
-      if (settings.enableFakeDns) 'fakedns',
-      resolver,
-    ];
+    final resolver = settings.vpnDns.trim();
+    final ip = _isIpLiteral(resolver) ? resolver : '1.1.1.1';
     return {
-      'servers': servers,
-      'queryStrategy': 'UseIP',
+      'servers': [
+        ip,
+        if (ip != '8.8.8.8') '8.8.8.8',
+        {'address': 'fakedns'},
+      ],
+      'queryStrategy': 'UseIPv4',
+      'fakeDns': {
+        'ipPool': '198.18.0.0/15',
+        'poolSize': 32768,
+      },
     };
+  }
+
+  bool _isIpLiteral(String value) {
+    final parts = value.split('.');
+    if (parts.length != 4) return false;
+    for (final part in parts) {
+      final n = int.tryParse(part);
+      if (n == null || n < 0 || n > 255) return false;
+    }
+    return true;
   }
 }

@@ -80,7 +80,11 @@ class _SpeedTestScreenState extends State<SpeedTestScreen> {
         isTesting = false;
         _phase = 'Failed';
       });
-      Get.snackbar('Speed test failed', error.toString());
+      Get.snackbar(
+        'Speed test failed',
+        'In-app lookup can fail because VBox is excluded from its own VPN. '
+        'Open Chrome and search — that is the real check.',
+      );
     }
   }
 
