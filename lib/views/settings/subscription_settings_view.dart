@@ -149,89 +149,107 @@ class SubscriptionSettingsScreen extends StatelessWidget {
   }
 
   Future<void> _showAddDialog(BuildContext context) async {
-    final name = TextEditingController();
-    final url = TextEditingController();
-    var busy = false;
-    await Get.dialog(
-      StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            backgroundColor: AppColors.surface,
-            title: const Text('Add subscription'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: name,
-                  textInputAction: TextInputAction.next,
-                  decoration: InputDecoration(
-                    labelText: 'Name',
-                    filled: true,
-                    fillColor: AppColors.bgElevated,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: url,
-                  keyboardType: TextInputType.url,
-                  decoration: InputDecoration(
-                    labelText: 'URL',
-                    filled: true,
-                    fillColor: AppColors.bgElevated,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-              ],
+    final added = await Get.dialog<bool>(const _AddSubscriptionDialog());
+    if (added != true) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Get.snackbar('Added', 'Subscription imported');
+    });
+  }
+}
+
+class _AddSubscriptionDialog extends StatefulWidget {
+  const _AddSubscriptionDialog();
+
+  @override
+  State<_AddSubscriptionDialog> createState() => _AddSubscriptionDialogState();
+}
+
+class _AddSubscriptionDialogState extends State<_AddSubscriptionDialog> {
+  final _name = TextEditingController();
+  final _url = TextEditingController();
+  var _busy = false;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _url.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_url.text.trim().isEmpty) {
+      Get.snackbar('URL required', 'Paste a subscription URL');
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await Get.find<ConfigController>().addSubscription(
+        name: _name.text,
+        url: _url.text,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (error) {
+      if (mounted) setState(() => _busy = false);
+      Get.snackbar('Failed', error.toString());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppColors.surface,
+      title: const Text('Add subscription'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _name,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              labelText: 'Name',
+              filled: true,
+              fillColor: AppColors.bgElevated,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
-            actions: [
-              TextButton(
-                onPressed: busy ? null : () => Get.back(),
-                child: const Text('Cancel', style: TextStyle(color: AppColors.muted)),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _url,
+            keyboardType: TextInputType.url,
+            decoration: InputDecoration(
+              labelText: 'URL',
+              filled: true,
+              fillColor: AppColors.bgElevated,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
               ),
-              TextButton(
-                onPressed: busy
-                    ? null
-                    : () async {
-                        if (url.text.trim().isEmpty) {
-                          Get.snackbar('URL required', 'Paste a subscription URL');
-                          return;
-                        }
-                        setState(() => busy = true);
-                        try {
-                          await Get.find<ConfigController>().addSubscription(
-                            name: name.text,
-                            url: url.text,
-                          );
-                          Get.back();
-                          Get.snackbar('Added', 'Subscription imported');
-                        } catch (error) {
-                          setState(() => busy = false);
-                          Get.snackbar('Failed', error.toString());
-                        }
-                      },
-                child: busy
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.copper,
-                        ),
-                      )
-                    : const Text('Add', style: TextStyle(color: AppColors.copper)),
-              ),
-            ],
-          );
-        },
+            ),
+          ),
+        ],
       ),
+      actions: [
+        TextButton(
+          onPressed: _busy ? null : () => Navigator.of(context).pop(false),
+          child: const Text('Cancel', style: TextStyle(color: AppColors.muted)),
+        ),
+        TextButton(
+          onPressed: _busy ? null : _submit,
+          child: _busy
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.copper,
+                  ),
+                )
+              : const Text('Add', style: TextStyle(color: AppColors.copper)),
+        ),
+      ],
     );
-    name.dispose();
-    url.dispose();
   }
 }
 

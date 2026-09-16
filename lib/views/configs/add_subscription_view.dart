@@ -36,8 +36,11 @@ class _AddSubscriptionViewState extends State<AddSubscriptionView> {
         name: _name.text,
         url: _url.text,
       );
-      Get.back();
-      Get.snackbar('Added', 'Subscription imported');
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.snackbar('Added', 'Subscription imported');
+      });
     } catch (error) {
       Get.snackbar('Failed', error.toString());
     } finally {
