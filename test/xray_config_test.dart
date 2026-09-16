@@ -39,6 +39,56 @@ void main() {
     expect(tags.first, 'proxy');
   });
 
+  test('bypass LAN keeps private IPs on the direct outbound', () {
+    final json = service.buildConfiguration(
+      VpnConfig(
+        id: '1',
+        remark: 'node',
+        shareLink: ssLink,
+        protocol: 'ss',
+      ),
+      AppSettings(routeMode: RouteMode.bypassLan),
+    );
+    final map = jsonDecode(json) as Map<String, dynamic>;
+    final rules = (map['routing'] as Map)['rules'] as List;
+    expect(
+      rules.any(
+        (rule) =>
+            rule is Map &&
+            rule['outboundTag'] == 'direct' &&
+            (rule['ip'] as List).contains('geoip:private'),
+      ),
+      isTrue,
+    );
+  });
+
+  test('config exposes a local HTTP inbound so IP can be checked through the tunnel', () {
+    final json = service.buildConfiguration(
+      VpnConfig(
+        id: '1',
+        remark: 'node',
+        shareLink: ssLink,
+        protocol: 'ss',
+      ),
+      AppSettings(),
+    );
+    final map = jsonDecode(json) as Map<String, dynamic>;
+    final inbounds = map['inbounds'] as List;
+    expect(
+      inbounds.any(
+        (item) =>
+            item is Map &&
+            item['protocol'] == 'http' &&
+            item['port'] == 10809,
+      ),
+      isTrue,
+    );
+    final httpIn = inbounds.firstWhere(
+      (item) => item is Map && item['port'] == 10809,
+    ) as Map;
+    expect(httpIn['sniffing'], isNull);
+  });
+
   test('json config with a custom outbound tag is renamed to proxy and moved first', () {
     const raw = '''
 {

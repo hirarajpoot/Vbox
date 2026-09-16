@@ -13,6 +13,14 @@ String formatBytes(num bytes) {
 
 String formatSpeed(num bytesPerSec) => '${formatBytes(bytesPerSec)}/s';
 
+String formatLiveSpeed(num bytesPerSec) {
+  final kb = bytesPerSec <= 0 ? 0.0 : bytesPerSec / 1024;
+  if (kb >= 1024) {
+    return '${(kb / 1024).toStringAsFixed(1)} MB/s';
+  }
+  return '${kb.toStringAsFixed(1)} KB/s';
+}
+
 String formatPing(int? ms) {
   if (ms == null) return '—';
   if (ms < 0) return 'timeout';

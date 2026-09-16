@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -82,8 +83,7 @@ class _SpeedTestScreenState extends State<SpeedTestScreen> {
       });
       Get.snackbar(
         'Speed test failed',
-        'In-app lookup can fail because VBox is excluded from its own VPN. '
-        'Open Chrome and search — that is the real check.',
+        'Could not reach the test server. Check the tunnel, then try again.',
       );
     }
   }

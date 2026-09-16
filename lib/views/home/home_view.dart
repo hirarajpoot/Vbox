@@ -212,6 +212,19 @@ class _SessionHero extends StatelessWidget {
               textAlign: TextAlign.center,
               style: const TextStyle(color: AppColors.muted, fontSize: 13),
             ),
+            const SizedBox(height: 6),
+            Text(
+              home.ipBusy.value
+                  ? 'IP  ${home.publicIp.value}  ·  checking'
+                  : 'IP  ${home.publicIp.value}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.copperSoft,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.4,
+              ),
+            ),
             if (connected &&
                 home.hopPing.value != null &&
                 home.hopPing.value! >= 0) ...[
@@ -317,6 +330,7 @@ class _Meter extends StatelessWidget {
               color: AppColors.cream,
               fontSize: 15,
               fontWeight: FontWeight.w700,
+              fontFeatures: [FontFeature.tabularFigures()],
             ),
           ),
         ],

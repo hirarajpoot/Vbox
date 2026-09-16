@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:vbox/platform/v2ray_plugin.dart';
-import 'package:vbox/core/constants/lan_bypass.dart';
 import 'package:vbox/core/utils/xray_config.dart';
 import 'package:vbox/data/models/app_settings.dart';
 import 'package:vbox/data/models/vpn_config.dart';
@@ -74,18 +73,13 @@ class V2RayService {
       throw StateError('VPN core runs on Android only. Use a phone or emulator.');
     }
     final json = buildConfiguration(config, settings);
-    final bypass = <String>[
-      if (settings.routeMode == RouteMode.bypassLan) ...lanBypassSubnets,
-      if (settings.routeMode == RouteMode.custom)
-        ...settings.customBypassSubnets.where((s) => s.trim().isNotEmpty),
-    ];
     await engine.startV2Ray(
       remark: config.remark,
       config: json,
       blockedApps: settings.perAppProxy && settings.blockedApps.isNotEmpty
           ? settings.blockedApps
           : null,
-      bypassSubnets: bypass.isEmpty ? null : bypass,
+      bypassSubnets: null,
       proxyOnly: settings.proxyOnly,
       notificationDisconnectButtonName: 'DISCONNECT',
     );
@@ -141,11 +135,15 @@ class V2RayService {
       if (map is! Map<String, dynamic>) return jsonConfig;
 
       map['dns'] = _dnsObject(settings);
+      _ensureLocalInbounds(map);
 
       final inbounds = map['inbounds'];
       if (inbounds is List) {
         for (final inbound in inbounds) {
           if (inbound is! Map) continue;
+          if (inbound['tag'] == 'http-in' || inbound['port'] == 10809) {
+            continue;
+          }
           inbound['sniffing'] = {
             'enabled': true,
             'destOverride': ['http', 'tls', 'fakedns'],
@@ -162,6 +160,16 @@ class V2RayService {
           'tag': 'dns-out',
           'protocol': 'dns',
         });
+        final hasDirect = outbounds.any(
+          (item) => item is Map && item['tag'] == 'direct',
+        );
+        if (!hasDirect) {
+          outbounds.add({
+            'tag': 'direct',
+            'protocol': 'freedom',
+            'settings': {'domainStrategy': 'UseIP'},
+          });
+        }
       }
 
       final routing = map['routing'] is Map
@@ -174,12 +182,32 @@ class V2RayService {
             rule['outboundTag'] == 'dns-out' &&
             '${rule['port']}' == '53',
       );
+      rules.removeWhere(
+        (rule) =>
+            rule is Map &&
+            rule['outboundTag'] == 'direct' &&
+            rule['ip'] is List,
+      );
       rules.insert(0, {
         'type': 'field',
         'network': 'udp',
         'port': '53',
         'outboundTag': 'dns-out',
       });
+      if (settings.routeMode == RouteMode.bypassLan) {
+        rules.insert(1, {
+          'type': 'field',
+          'ip': ['geoip:private'],
+          'outboundTag': 'direct',
+        });
+      } else if (settings.routeMode == RouteMode.custom &&
+          settings.customBypassSubnets.isNotEmpty) {
+        rules.insert(1, {
+          'type': 'field',
+          'ip': settings.customBypassSubnets,
+          'outboundTag': 'direct',
+        });
+      }
       routing['domainStrategy'] =
           routing['domainStrategy'] ?? 'IPIfNonMatch';
       routing['rules'] = rules;
@@ -190,6 +218,37 @@ class V2RayService {
     } catch (error, stack) {
       debugPrint('V2Ray tunnel DNS skipped: $error\n$stack');
       return jsonConfig;
+    }
+  }
+
+  void _ensureLocalInbounds(Map<String, dynamic> map) {
+    final existing = map['inbounds'];
+    final inbounds = existing is List ? existing : <dynamic>[];
+    map['inbounds'] = inbounds;
+    final hasSocks = inbounds.any(
+      (item) => item is Map && item['protocol'] == 'socks',
+    );
+    final hasHttp = inbounds.any(
+      (item) =>
+          item is Map && item['protocol'] == 'http' && item['port'] == 10809,
+    );
+    if (!hasSocks) {
+      inbounds.add({
+        'tag': 'socks-in',
+        'port': 10808,
+        'listen': '127.0.0.1',
+        'protocol': 'socks',
+        'settings': {'auth': 'noauth', 'udp': true, 'userLevel': 8},
+      });
+    }
+    if (!hasHttp) {
+      inbounds.add({
+        'tag': 'http-in',
+        'port': 10809,
+        'listen': '127.0.0.1',
+        'protocol': 'http',
+        'settings': {'allowTransparent': false, 'userLevel': 8},
+      });
     }
   }
 
