@@ -33,6 +33,7 @@ class VpnController extends GetxController {
     _v2ray.onStatus = (value) {
       final previous = status.value.state;
       status.value = value;
+      status.refresh();
       final now = value.state.toUpperCase();
       final wasConnected = previous.toUpperCase().contains('CONNECT');
       if (wasConnected && now.contains('DISCONNECT')) {

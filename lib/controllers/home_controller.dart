@@ -71,9 +71,11 @@ class HomeController extends GetxController {
 
   void _startTicker() {
     _ticker ??= Timer.periodic(const Duration(seconds: 1), (_) {
-      if (isConnected.value) {
-        connectionDuration.value += const Duration(seconds: 1);
-      }
+      if (!isConnected.value) return;
+      connectionDuration.value += const Duration(seconds: 1);
+      final latest = _vpn.status.value;
+      uploadSpeed.value = formatSpeed(latest.uploadSpeed);
+      downloadSpeed.value = formatSpeed(latest.downloadSpeed);
     });
   }
 

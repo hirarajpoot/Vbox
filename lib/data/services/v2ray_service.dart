@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:vbox/platform/v2ray_plugin.dart';
 import 'package:vbox/core/constants/lan_bypass.dart';
+import 'package:vbox/core/utils/xray_config.dart';
 import 'package:vbox/data/models/app_settings.dart';
 import 'package:vbox/data/models/vpn_config.dart';
 
@@ -163,18 +164,28 @@ class V2RayService {
         });
       }
 
-      map['routing'] = {
-        'domainStrategy': 'IPIfNonMatch',
-        'rules': [
-          {
-            'type': 'field',
-            'network': 'udp',
-            'port': '53',
-            'outboundTag': 'dns-out',
-          },
-        ],
-      };
+      final routing = map['routing'] is Map
+          ? Map<String, dynamic>.from(map['routing'] as Map)
+          : <String, dynamic>{};
+      final rules = List<dynamic>.from(routing['rules'] as List? ?? const []);
+      rules.removeWhere(
+        (rule) =>
+            rule is Map &&
+            rule['outboundTag'] == 'dns-out' &&
+            '${rule['port']}' == '53',
+      );
+      rules.insert(0, {
+        'type': 'field',
+        'network': 'udp',
+        'port': '53',
+        'outboundTag': 'dns-out',
+      });
+      routing['domainStrategy'] =
+          routing['domainStrategy'] ?? 'IPIfNonMatch';
+      routing['rules'] = rules;
+      map['routing'] = routing;
 
+      patchXrayConfigForTrafficStats(map);
       return jsonEncode(map);
     } catch (error, stack) {
       debugPrint('V2Ray tunnel DNS skipped: $error\n$stack');
