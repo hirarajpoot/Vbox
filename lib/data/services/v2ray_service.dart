@@ -125,10 +125,9 @@ class V2RayService {
     }
   }
 
-  /// V2Box-style DNS for tun2socks: Android VpnService can only addDnsServer()
-  /// real IPs (string entries first). FakeDNS is an object so Java skips it
-  /// after the IPs are already installed. UDP 53 is handed to Xray's DNS
-  /// module instead of being forwarded as UDP through the VMess node.
+  /// v2rayNG-style tunnel overlay. FakeDNS is intentionally omitted:
+  /// 198.18.0.0/15 is inside geoip:private, and bypass-LAN (the default)
+  /// would send those packets out the ISP — public IP never changes.
   String _enableTunnelDns(String jsonConfig, AppSettings settings) {
     try {
       final map = jsonDecode(jsonConfig);
@@ -136,20 +135,6 @@ class V2RayService {
 
       map['dns'] = _dnsObject(settings);
       _ensureLocalInbounds(map);
-
-      final inbounds = map['inbounds'];
-      if (inbounds is List) {
-        for (final inbound in inbounds) {
-          if (inbound is! Map) continue;
-          if (inbound['tag'] == 'http-in' || inbound['port'] == 10809) {
-            continue;
-          }
-          inbound['sniffing'] = {
-            'enabled': true,
-            'destOverride': ['http', 'tls', 'fakedns'],
-          };
-        }
-      }
 
       final outbounds = map['outbounds'];
       if (outbounds is List) {
@@ -208,8 +193,7 @@ class V2RayService {
           'outboundTag': 'direct',
         });
       }
-      routing['domainStrategy'] =
-          routing['domainStrategy'] ?? 'IPIfNonMatch';
+      routing['domainStrategy'] = 'IPIfNonMatch';
       routing['rules'] = rules;
       map['routing'] = routing;
 
@@ -223,33 +207,44 @@ class V2RayService {
 
   void _ensureLocalInbounds(Map<String, dynamic> map) {
     final existing = map['inbounds'];
-    final inbounds = existing is List ? existing : <dynamic>[];
-    map['inbounds'] = inbounds;
-    final hasSocks = inbounds.any(
-      (item) => item is Map && item['protocol'] == 'socks',
-    );
-    final hasHttp = inbounds.any(
-      (item) =>
-          item is Map && item['protocol'] == 'http' && item['port'] == 10809,
-    );
-    if (!hasSocks) {
-      inbounds.add({
-        'tag': 'socks-in',
-        'port': 10808,
-        'listen': '127.0.0.1',
-        'protocol': 'socks',
-        'settings': {'auth': 'noauth', 'udp': true, 'userLevel': 8},
-      });
+    final kept = <dynamic>[];
+    if (existing is List) {
+      for (final item in existing) {
+        if (item is! Map) {
+          kept.add(item);
+          continue;
+        }
+        final protocol = '${item['protocol'] ?? ''}';
+        final port = item['port'];
+        if (protocol == 'socks' ||
+            protocol == 'http' ||
+            port == 1080 ||
+            port == 10808 ||
+            port == 10809) {
+          continue;
+        }
+        kept.add(item);
+      }
     }
-    if (!hasHttp) {
-      inbounds.add({
-        'tag': 'http-in',
-        'port': 10809,
-        'listen': '127.0.0.1',
-        'protocol': 'http',
-        'settings': {'allowTransparent': false, 'userLevel': 8},
-      });
-    }
+    kept.insert(0, {
+      'tag': 'socks-in',
+      'port': 10808,
+      'listen': '127.0.0.1',
+      'protocol': 'socks',
+      'settings': {'auth': 'noauth', 'udp': true, 'userLevel': 8},
+      'sniffing': {
+        'enabled': true,
+        'destOverride': ['http', 'tls'],
+      },
+    });
+    kept.add({
+      'tag': 'http-in',
+      'port': 10809,
+      'listen': '127.0.0.1',
+      'protocol': 'http',
+      'settings': {'allowTransparent': false, 'userLevel': 8},
+    });
+    map['inbounds'] = kept;
   }
 
   String _applyMtu(String jsonConfig, int mtu) {
@@ -289,13 +284,8 @@ class V2RayService {
       'servers': [
         ip,
         if (ip != '8.8.8.8') '8.8.8.8',
-        {'address': 'fakedns'},
       ],
       'queryStrategy': 'UseIPv4',
-      'fakeDns': {
-        'ipPool': '198.18.0.0/15',
-        'poolSize': 32768,
-      },
     };
   }
 

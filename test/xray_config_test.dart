@@ -83,10 +83,23 @@ void main() {
       ),
       isTrue,
     );
+    expect(
+      inbounds.any(
+        (item) =>
+            item is Map &&
+            item['protocol'] == 'socks' &&
+            item['port'] == 10808,
+      ),
+      isTrue,
+    );
     final httpIn = inbounds.firstWhere(
       (item) => item is Map && item['port'] == 10809,
     ) as Map;
-    expect(httpIn['sniffing'], isNull);
+    final socks = inbounds.firstWhere(
+      (item) => item is Map && item['port'] == 10808,
+    ) as Map;
+    expect((socks['sniffing'] as Map)['destOverride'], ['http', 'tls']);
+    expect(json.toLowerCase().contains('fakedns'), isFalse);
   });
 
   test('json config with a custom outbound tag is renamed to proxy and moved first', () {

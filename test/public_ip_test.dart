@@ -28,4 +28,29 @@ void main() {
       '203.0.113.44',
     );
   });
+
+  test('detects when a tunnel IP check still returned the ISP address', () {
+    expect(isSamePublicIp('203.0.113.10', '203.0.113.10\n'), isTrue);
+    expect(isSamePublicIp('203.0.113.10', '198.51.100.20'), isFalse);
+    expect(isSamePublicIp('not-an-ip', '203.0.113.10'), isFalse);
+  });
+
+  test('keeps the tunnel IP if a later check leaks the ISP address', () {
+    expect(
+      pickPublicIpToShow(
+        shown: '149.88.23.207',
+        fetched: '202.63.209.103',
+        ispIp: '202.63.209.103',
+      ),
+      '149.88.23.207',
+    );
+    expect(
+      pickPublicIpToShow(
+        shown: '149.88.23.207',
+        fetched: '149.88.23.207',
+        ispIp: '202.63.209.103',
+      ),
+      '149.88.23.207',
+    );
+  });
 }

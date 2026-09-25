@@ -29,6 +29,33 @@ String? parsePublicIpFromHttp(String raw) {
   return null;
 }
 
+bool isSamePublicIp(String? left, String? right) {
+  if (left == null || right == null) return false;
+  final a = parsePublicIp(left);
+  final b = parsePublicIp(right);
+  if (a == null || b == null) return false;
+  return a == b;
+}
+
+/// Prefer a freshly fetched tunnel IP. If that check leaked or failed,
+/// keep the last good IP that was not the ISP address.
+String? pickPublicIpToShow({
+  String? shown,
+  String? fetched,
+  String? ispIp,
+}) {
+  final fetchedIp = parsePublicIp(fetched ?? '');
+  if (fetchedIp != null && !isSamePublicIp(fetchedIp, ispIp)) {
+    return fetchedIp;
+  }
+  final shownIp = parsePublicIp(shown ?? '');
+  if (shownIp != null && !isSamePublicIp(shownIp, ispIp)) {
+    return shownIp;
+  }
+  if (fetchedIp != null && ispIp == null) return fetchedIp;
+  return shownIp;
+}
+
 bool _isIpv4(String value) {
   final parts = value.split('.');
   if (parts.length != 4) return false;

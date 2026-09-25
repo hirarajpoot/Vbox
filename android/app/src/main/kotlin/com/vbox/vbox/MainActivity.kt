@@ -1,8 +1,5 @@
 package com.vbox.vbox
 
-import android.content.Context
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.net.TrafficStats
 import android.os.Handler
 import android.os.Looper
@@ -10,8 +7,10 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
+import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.InetSocketAddress
+import java.net.Proxy
 import java.net.Socket
 import java.net.URL
 
@@ -41,67 +40,81 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun fetchPublicIp(): String {
-        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        var last: Exception = Exception("VPN network not found")
-        repeat(5) {
-            val vpn = findVpnNetwork(cm)
+        var last: Exception = Exception("tunnel IP failed")
+        try {
+            return readIpViaHttpProxy(10809)
+        } catch (error: Exception) {
+            last = error
+        }
+        for (port in intArrayOf(10808, 1080)) {
             try {
-                return readIpPlain(vpn, "1.1.1.1", "/cdn-cgi/trace")
+                return readIpViaSocks(port)
             } catch (error: Exception) {
                 last = error
             }
-            try {
-                return readIpPlain(vpn, "1.0.0.1", "/cdn-cgi/trace")
-            } catch (error: Exception) {
-                last = error
-            }
-            val urls = listOf(
-                "https://1.1.1.1/cdn-cgi/trace",
-                "https://1.0.0.1/cdn-cgi/trace",
-                "http://1.1.1.1/cdn-cgi/trace",
-                "https://api.ipify.org",
-                "http://api.ipify.org",
-            )
-            for (raw in urls) {
-                try {
-                    return readIpHttp(vpn, raw)
-                } catch (error: Exception) {
-                    last = error
-                }
-            }
-            Thread.sleep(900)
         }
         throw last
     }
 
-    private fun findVpnNetwork(cm: ConnectivityManager): android.net.Network? {
-        for (network in cm.allNetworks) {
-            val caps = cm.getNetworkCapabilities(network)
-            if (caps?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true) {
-                return network
+    private fun readIpViaHttpProxy(port: Int): String {
+        val proxy = Proxy(Proxy.Type.HTTP, InetSocketAddress("127.0.0.1", port))
+        var last: Exception = Exception("http proxy empty")
+        val urls = listOf(
+            "https://api.ipify.org",
+            "http://api.ipify.org",
+            "https://ifconfig.me/ip",
+        )
+        for (raw in urls) {
+            val conn = URL(raw).openConnection(proxy) as HttpURLConnection
+            conn.connectTimeout = 8000
+            conn.readTimeout = 8000
+            conn.instanceFollowRedirects = true
+            conn.useCaches = false
+            conn.setRequestProperty("User-Agent", "VBox")
+            try {
+                val code = conn.responseCode
+                val stream = if (code in 200..299) conn.inputStream else conn.errorStream
+                val body = stream?.bufferedReader()?.use { it.readText() } ?: ""
+                return parsePublicIp(body) ?: throw Exception("HTTP $code")
+            } catch (error: Exception) {
+                last = error
+            } finally {
+                conn.disconnect()
             }
-            val name = cm.getLinkProperties(network)?.interfaceName ?: continue
-            if (name.startsWith("tun") || name.startsWith("ppp")) return network
         }
-        val active = cm.activeNetwork ?: return null
-        val caps = cm.getNetworkCapabilities(active)
-        return if (caps?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true) active else null
+        throw last
     }
 
-    private fun readIpPlain(network: android.net.Network?, host: String, path: String): String {
+    private fun readIpViaSocks(port: Int): String {
         val socket = Socket()
         try {
-            network?.bindSocket(socket)
-            socket.connect(InetSocketAddress(host, 80), 6000)
-            socket.soTimeout = 6000
+            socket.bind(InetSocketAddress("127.0.0.1", 0))
+            socket.connect(InetSocketAddress("127.0.0.1", port), 4000)
+            socket.soTimeout = 5000
             val out = socket.getOutputStream()
+            val inp = socket.getInputStream()
+            out.write(byteArrayOf(0x05, 0x01, 0x00))
+            out.flush()
+            val greet = ByteArray(2)
+            readFully(inp, greet)
+            if (greet[0] != 0x05.toByte() || greet[1] != 0x00.toByte()) {
+                throw Exception("socks auth $port")
+            }
+            out.write(byteArrayOf(0x05, 0x01, 0x00, 0x01, 1, 1, 1, 1, 0x00, 0x50))
+            out.flush()
+            val head = ByteArray(4)
+            readFully(inp, head)
+            if (head[1] != 0x00.toByte()) {
+                throw Exception("socks connect ${head[1].toInt() and 0xff}")
+            }
+            skipSocksBind(inp, head[3].toInt() and 0xff)
             out.write(
-                "GET $path HTTP/1.0\r\nHost: $host\r\nConnection: close\r\n\r\n"
+                "GET /cdn-cgi/trace HTTP/1.0\r\nHost: 1.1.1.1\r\nConnection: close\r\n\r\n"
                     .toByteArray(Charsets.US_ASCII),
             )
             out.flush()
-            val body = socket.getInputStream().bufferedReader().readText()
-            return parsePublicIp(body) ?: throw Exception("no ip in $host")
+            val body = inp.bufferedReader().readText()
+            return parsePublicIp(body) ?: throw Exception("socks empty $port")
         } finally {
             try {
                 socket.close()
@@ -110,22 +123,26 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    private fun readIpHttp(network: android.net.Network?, raw: String): String {
-        val url = URL(raw)
-        val conn = (if (network != null) network.openConnection(url) else url.openConnection())
-            as HttpURLConnection
-        conn.connectTimeout = 6000
-        conn.readTimeout = 6000
-        conn.instanceFollowRedirects = true
-        conn.useCaches = false
-        conn.setRequestProperty("User-Agent", "VBox")
-        try {
-            val code = conn.responseCode
-            val stream = if (code in 200..299) conn.inputStream else conn.errorStream
-            val body = stream?.bufferedReader()?.use { it.readText() } ?: ""
-            return parsePublicIp(body) ?: throw Exception("HTTP $code")
-        } finally {
-            conn.disconnect()
+    private fun skipSocksBind(inp: InputStream, atyp: Int) {
+        val extra = when (atyp) {
+            0x01 -> 6
+            0x04 -> 18
+            0x03 -> {
+                val len = ByteArray(1)
+                readFully(inp, len)
+                (len[0].toInt() and 0xff) + 2
+            }
+            else -> 0
+        }
+        if (extra > 0) readFully(inp, ByteArray(extra))
+    }
+
+    private fun readFully(inp: InputStream, buf: ByteArray) {
+        var off = 0
+        while (off < buf.size) {
+            val n = inp.read(buf, off, buf.size - off)
+            if (n < 0)             throw Exception("socks eof")
+            off += n
         }
     }
 

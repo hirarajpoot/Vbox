@@ -5,6 +5,7 @@ import 'package:vbox/controllers/server_controller.dart';
 import 'package:vbox/controllers/settings_controller.dart';
 import 'package:vbox/controllers/vpn_controller.dart';
 import 'package:vbox/core/utils/formatters.dart';
+import 'package:vbox/core/utils/public_ip.dart';
 import 'package:vbox/core/utils/session_traffic.dart';
 import 'package:vbox/data/models/server_model.dart';
 import 'package:vbox/data/services/public_ip_service.dart';
@@ -38,11 +39,14 @@ class HomeController extends GetxController {
   final ipBusy = false.obs;
 
   Timer? _ticker;
+  Timer? _lostTunnel;
   TrafficSnapshot? _pipe;
   var _readingPipe = false;
   var _ipToken = 0;
   var _upBps = 0.0;
   var _downBps = 0.0;
+  var _sessionActive = false;
+  String? _ispIp;
 
   @override
   void onInit() {
@@ -54,12 +58,15 @@ class HomeController extends GetxController {
     ever(_servers.selectedServerId, (_) => _syncSelected());
     ever(_vpn.status, (_) => _syncFromVpn());
     ever(_vpn.connectedPing, (value) => hopPing.value = value);
-    _refreshIp();
+    if (!isConnected.value && !isConnecting.value) {
+      _refreshIp();
+    }
   }
 
   @override
   void onClose() {
     _ticker?.cancel();
+    _lostTunnel?.cancel();
     super.onClose();
   }
 
@@ -69,31 +76,49 @@ class HomeController extends GetxController {
   }
 
   void _syncFromVpn() {
-    final wasConnected = isConnected.value;
-    isConnected.value = _vpn.isConnected;
+    final nowConnected = _vpn.isConnected;
     isConnecting.value = _vpn.isConnecting;
     hopPing.value = _vpn.connectedPing.value;
     _syncSelected();
 
-    if (isConnected.value) {
-      if (!wasConnected) {
+    if (_vpn.isConnecting && !nowConnected) {
+      publicIp.value = '—';
+      ipBusy.value = true;
+    }
+
+    if (nowConnected) {
+      _lostTunnel?.cancel();
+      _lostTunnel = null;
+      final becameConnected = !isConnected.value;
+      isConnected.value = true;
+      if (becameConnected && !_sessionActive) {
+        _sessionActive = true;
         connectionDuration.value = Duration.zero;
         _pipe = null;
         _upBps = 0;
         _downBps = 0;
         _setSpeedLabels();
+        publicIp.value = '—';
         _refreshIp(delay: const Duration(seconds: 3));
       }
       _startTicker();
-    } else {
-      _stopTicker();
-      _upBps = 0;
-      _downBps = 0;
-      _setSpeedLabels();
-      if (!isConnecting.value) {
-        connectionDuration.value = Duration.zero;
-      }
-      if (wasConnected) _refreshIp();
+      return;
+    }
+
+    if (isConnected.value) {
+      _lostTunnel ??= Timer(const Duration(milliseconds: 1200), () {
+        if (_vpn.isConnected || _vpn.isConnecting) return;
+        isConnected.value = false;
+        _sessionActive = false;
+        _stopTicker();
+        _upBps = 0;
+        _downBps = 0;
+        _setSpeedLabels();
+        if (!isConnecting.value) {
+          connectionDuration.value = Duration.zero;
+        }
+        _refreshIp();
+      });
     }
   }
 
@@ -183,7 +208,7 @@ class HomeController extends GetxController {
         if (token != _ipToken) return;
       }
       final viaTunnel = isConnected.value;
-      final attempts = viaTunnel ? 3 : 1;
+      final attempts = viaTunnel ? 4 : 1;
       Object? lastError;
       for (var i = 0; i < attempts; i++) {
         if (token != _ipToken) return;
@@ -191,18 +216,35 @@ class HomeController extends GetxController {
           String ip;
           if (viaTunnel) {
             try {
-              ip = await _ip.lookupThroughTunnel();
-            } catch (dartError) {
+              ip = await _tunStats.publicIp();
+            } catch (nativeError) {
               try {
-                ip = await _tunStats.publicIp();
+                ip = await _ip.lookupThroughTunnel();
               } catch (_) {
-                throw dartError;
+                throw nativeError;
               }
             }
           } else {
             ip = await _ip.lookup();
+            if (!isConnected.value &&
+                !isConnecting.value &&
+                !_vpn.isConnected) {
+              _ispIp = ip;
+            }
           }
           if (token != _ipToken) return;
+          final shown = pickPublicIpToShow(
+            shown: publicIp.value,
+            fetched: ip,
+            ispIp: viaTunnel ? _ispIp : null,
+          );
+          if (shown != null) {
+            publicIp.value = shown;
+            return;
+          }
+          if (viaTunnel) {
+            throw Exception('IP unchanged');
+          }
           publicIp.value = ip;
           return;
         } catch (error) {
@@ -213,7 +255,16 @@ class HomeController extends GetxController {
         }
       }
       if (token != _ipToken) return;
-      publicIp.value = _ipError(lastError ?? 'IP failed');
+      final kept = pickPublicIpToShow(
+        shown: publicIp.value,
+        fetched: null,
+        ispIp: viaTunnel ? _ispIp : null,
+      );
+      if (kept != null) {
+        publicIp.value = kept;
+      } else if (!viaTunnel) {
+        publicIp.value = _ipError(lastError ?? 'IP failed');
+      }
     } finally {
       if (token == _ipToken) ipBusy.value = false;
     }

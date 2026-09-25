@@ -17,17 +17,10 @@ class PublicIpService {
     'https://ipinfo.io/ip',
   ];
 
-  static const _tunnelEndpoints = [
-    'https://1.1.1.1/cdn-cgi/trace',
-    'https://1.0.0.1/cdn-cgi/trace',
-    'http://1.1.1.1/cdn-cgi/trace',
-  ];
-
-  static const _socksPorts = [1080, 10808];
+  static const _socksPorts = [10808, 1080];
   static const _httpChecks = [
     ('1.1.1.1', 80, 'GET /cdn-cgi/trace HTTP/1.1'),
     ('api.ipify.org', 80, 'GET / HTTP/1.1'),
-    ('ipv4.icanhazip.com', 80, 'GET / HTTP/1.1'),
   ];
 
   Future<String> lookup({String? proxy}) async {
@@ -48,21 +41,6 @@ class PublicIpService {
 
   Future<String> lookupThroughTunnel() async {
     Object? lastError;
-    try {
-      return await _lookupViaDirectTcp();
-    } catch (error) {
-      lastError = error;
-    }
-    for (final url in _tunnelEndpoints) {
-      try {
-        final body = await _getDirect(url);
-        final ip = parsePublicIpFromHttp(body) ?? parsePublicIp(body);
-        if (ip != null) return ip;
-        lastError = 'bad body';
-      } catch (error) {
-        lastError = error;
-      }
-    }
     for (final port in _socksPorts) {
       for (final check in _httpChecks) {
         try {
@@ -85,31 +63,6 @@ class PublicIpService {
       lastError = error;
     }
     throw Exception('IP check failed (${lastError ?? 'unavailable'})');
-  }
-
-  Future<String> _lookupViaDirectTcp() async {
-    final socket = await Socket.connect(
-      '1.1.1.1',
-      80,
-      timeout: const Duration(seconds: 5),
-    );
-    try {
-      socket.add(
-        utf8.encode(
-          'GET /cdn-cgi/trace HTTP/1.0\r\nHost: 1.1.1.1\r\nConnection: close\r\n\r\n',
-        ),
-      );
-      await socket.flush();
-      final raw = await utf8.decoder
-          .bind(socket)
-          .join()
-          .timeout(const Duration(seconds: 5));
-      final ip = parsePublicIpFromHttp(raw) ?? parsePublicIp(raw);
-      if (ip == null) throw Exception('bad trace body');
-      return ip;
-    } finally {
-      socket.destroy();
-    }
   }
 
   Future<String> _getDirect(String url) async {
@@ -147,8 +100,9 @@ class PublicIpService {
     required String requestLine,
   }) async {
     final socket = await Socket.connect(
-      '127.0.0.1',
+      InternetAddress.loopbackIPv4,
       socksPort,
+      sourceAddress: InternetAddress.loopbackIPv4,
       timeout: const Duration(seconds: 3),
     );
     final reader = _SocketReader(socket);
@@ -159,19 +113,7 @@ class PublicIpService {
         throw Exception('SOCKS auth rejected');
       }
 
-      final hostBytes = utf8.encode(host);
-      socket.add(
-        Uint8List.fromList([
-          0x05,
-          0x01,
-          0x00,
-          0x03,
-          hostBytes.length,
-          ...hostBytes,
-          (port >> 8) & 0xff,
-          port & 0xff,
-        ]),
-      );
+      socket.add(_socksConnect(host, port));
       final head = await reader.read(4);
       if (head[1] != 0x00) {
         throw Exception('SOCKS connect failed');
@@ -189,6 +131,34 @@ class PublicIpService {
       reader.dispose();
       socket.destroy();
     }
+  }
+
+  Uint8List _socksConnect(String host, int port) {
+    final portHi = (port >> 8) & 0xff;
+    final portLo = port & 0xff;
+    final ipv4 = parsePublicIp(host);
+    if (ipv4 != null && ipv4.contains('.')) {
+      return Uint8List.fromList([
+        0x05,
+        0x01,
+        0x00,
+        0x01,
+        ...ipv4.split('.').map(int.parse),
+        portHi,
+        portLo,
+      ]);
+    }
+    final hostBytes = utf8.encode(host);
+    return Uint8List.fromList([
+      0x05,
+      0x01,
+      0x00,
+      0x03,
+      hostBytes.length,
+      ...hostBytes,
+      portHi,
+      portLo,
+    ]);
   }
 
   Future<void> _skipSocksBind(_SocketReader reader, int atyp) async {
