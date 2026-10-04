@@ -195,15 +195,17 @@ class _SessionHero extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              _formatDuration(home.connectionDuration.value),
-              style: const TextStyle(
-                color: AppColors.cream,
-                fontSize: 44,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 2,
-                height: 1,
-                fontFeatures: [FontFeature.tabularFigures()],
+            Obx(
+              () => Text(
+                _formatDuration(home.connectionDuration.value),
+                style: const TextStyle(
+                  color: AppColors.cream,
+                  fontSize: 44,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 2,
+                  height: 1,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -213,51 +215,58 @@ class _SessionHero extends StatelessWidget {
               style: const TextStyle(color: AppColors.muted, fontSize: 13),
             ),
             const SizedBox(height: 6),
-            Text(
-              home.ipBusy.value
-                  ? 'IP  ${home.publicIp.value}  ·  checking'
-                  : 'IP  ${home.publicIp.value}',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.copperSoft,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.4,
-              ),
-            ),
-            if (connected &&
-                home.hopPing.value != null &&
-                home.hopPing.value! >= 0) ...[
-              const SizedBox(height: 6),
-              Text(
-                '${home.hopPing.value}ms hop',
+            Obx(
+              () => Text(
+                home.ipBusy.value
+                    ? 'IP  ${home.publicIp.value}  ·  checking'
+                    : 'IP  ${home.publicIp.value}',
+                textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: AppColors.copperSoft,
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  letterSpacing: 0.6,
+                  letterSpacing: 0.4,
                 ),
               ),
-            ],
+            ),
+            if (connected)
+              Obx(() {
+                final ping = home.hopPing.value;
+                if (ping == null || ping < 0) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    '${ping}ms hop',
+                    style: const TextStyle(
+                      color: AppColors.copperSoft,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                );
+              }),
             const SizedBox(height: 18),
-            Row(
-              children: [
-                Expanded(
-                  child: _Meter(
-                    icon: LucideIcons.arrowUpRight,
-                    label: 'UP',
-                    value: home.uploadSpeed.value,
+            Obx(
+              () => Row(
+                children: [
+                  Expanded(
+                    child: _Meter(
+                      icon: LucideIcons.arrowUpRight,
+                      label: 'UP',
+                      value: home.uploadSpeed.value,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _Meter(
-                    icon: LucideIcons.arrowDownRight,
-                    label: 'DOWN',
-                    value: home.downloadSpeed.value,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _Meter(
+                      icon: LucideIcons.arrowDownRight,
+                      label: 'DOWN',
+                      value: home.downloadSpeed.value,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             const SizedBox(height: 16),
             if (connected)

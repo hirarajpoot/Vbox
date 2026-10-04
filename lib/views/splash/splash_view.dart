@@ -33,9 +33,9 @@ class _SplashScreenState extends State<SplashScreen>
     )..repeat();
     _bar = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2100),
+      duration: const Duration(milliseconds: 900),
     )..forward();
-    _navTimer = Timer(const Duration(milliseconds: 2400), _leave);
+    _navTimer = Timer(const Duration(milliseconds: 1100), _leave);
   }
 
   Future<void> _leave() async {

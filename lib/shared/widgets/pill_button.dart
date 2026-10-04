@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:vbox/core/theme/app_colors.dart';
+import 'package:vbox/core/theme/app_theme.dart';
 
 class PillButton extends StatelessWidget {
   const PillButton({
@@ -50,7 +50,8 @@ class PillButton extends StatelessWidget {
                     )
                   : Text(
                       text,
-                      style: GoogleFonts.poppins(
+                      style: const TextStyle(
+                        fontFamily: AppText.family,
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: AppColors.bg,

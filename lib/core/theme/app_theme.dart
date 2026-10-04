@@ -1,29 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:vbox/core/theme/app_colors.dart';
 
 class AppText {
-  static TextStyle get heading => GoogleFonts.poppins(
+  static const String family = 'Poppins';
+
+  static TextStyle get heading => const TextStyle(
+        fontFamily: family,
         fontSize: 26,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
         height: 1.2,
       );
 
-  static TextStyle get title => GoogleFonts.poppins(
+  static TextStyle get title => const TextStyle(
+        fontFamily: family,
         fontSize: 18,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
       );
 
-  static TextStyle get body => GoogleFonts.poppins(
+  static TextStyle get body => const TextStyle(
+        fontFamily: family,
         fontSize: 15,
         fontWeight: FontWeight.w400,
         color: AppColors.textPrimary,
       );
 
-  static TextStyle get caption => GoogleFonts.poppins(
+  static TextStyle get caption => const TextStyle(
+        fontFamily: family,
         fontSize: 12,
         fontWeight: FontWeight.w400,
         color: AppColors.textSecondary,
@@ -35,6 +40,7 @@ class AppTheme {
     final base = ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
+      fontFamily: AppText.family,
       scaffoldBackgroundColor: AppColors.bg,
       colorScheme: const ColorScheme.dark(
         primary: AppColors.copper,
@@ -46,30 +52,33 @@ class AppTheme {
       ),
     );
 
-    final text = GoogleFonts.poppinsTextTheme(base.textTheme).apply(
+    final text = base.textTheme.apply(
+      fontFamily: AppText.family,
       bodyColor: AppColors.textPrimary,
       displayColor: AppColors.textPrimary,
     );
 
     return base.copyWith(
       textTheme: text,
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
         foregroundColor: AppColors.textPrimary,
         systemOverlayStyle: SystemUiOverlayStyle.light,
-        titleTextStyle: GoogleFonts.poppins(
+        titleTextStyle: TextStyle(
+          fontFamily: AppText.family,
           fontSize: 24,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
         ),
-        iconTheme: const IconThemeData(color: AppColors.textSecondary),
+        iconTheme: IconThemeData(color: AppColors.textSecondary),
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColors.surfaceHigh,
-        contentTextStyle: GoogleFonts.poppins(
+        contentTextStyle: const TextStyle(
+          fontFamily: AppText.family,
           color: AppColors.textPrimary,
           fontSize: 14,
         ),
@@ -81,11 +90,13 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surface,
-        hintStyle: GoogleFonts.poppins(
+        hintStyle: const TextStyle(
+          fontFamily: AppText.family,
           color: AppColors.textSecondary,
           fontSize: 14,
         ),
-        labelStyle: GoogleFonts.poppins(
+        labelStyle: const TextStyle(
+          fontFamily: AppText.family,
           color: AppColors.textSecondary,
           fontSize: 14,
         ),
@@ -107,12 +118,19 @@ class AppTheme {
         backgroundColor: AppColors.surface,
         modalBackgroundColor: AppColors.surface,
       ),
-      tabBarTheme: TabBarThemeData(
+      tabBarTheme: const TabBarThemeData(
         indicatorColor: AppColors.primary,
         labelColor: AppColors.primarySoft,
         unselectedLabelColor: AppColors.textSecondary,
-        labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
-        unselectedLabelStyle: GoogleFonts.poppins(fontSize: 14),
+        labelStyle: TextStyle(
+          fontFamily: AppText.family,
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+        ),
+        unselectedLabelStyle: TextStyle(
+          fontFamily: AppText.family,
+          fontSize: 14,
+        ),
       ),
     );
   }

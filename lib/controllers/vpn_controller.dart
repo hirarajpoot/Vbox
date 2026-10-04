@@ -19,6 +19,7 @@ class VpnController extends GetxController {
   final busy = false.obs;
   final coreVersion = '—'.obs;
   final connectedPing = RxnInt();
+  var latest = V2RayStatus();
 
   var _userStopped = true;
   var _reconnecting = false;
@@ -32,9 +33,10 @@ class VpnController extends GetxController {
   void onInit() {
     super.onInit();
     _v2ray.onStatus = (value) {
+      latest = value;
       final previous = status.value.state;
+      if (previous == value.state) return;
       status.value = value;
-      status.refresh();
       final now = value.state.toUpperCase();
       final wasConnected = previous.toUpperCase().contains('CONNECT');
       if (wasConnected && now.contains('DISCONNECT')) {
@@ -45,10 +47,14 @@ class VpnController extends GetxController {
     };
     _loadCore();
     if (_settings.settings.autoConnect) {
-      Future<void>.delayed(const Duration(milliseconds: 600), connect);
+      Future<void>.delayed(const Duration(milliseconds: 800), connect);
     }
     if (_settings.settings.autoUpdateSubs) {
-      _configs.updateAllSubscriptions();
+      Future<void>.delayed(const Duration(seconds: 4), () {
+        if (_settings.settings.autoUpdateSubs) {
+          _configs.updateAllSubscriptions();
+        }
+      });
     }
   }
 

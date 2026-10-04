@@ -140,7 +140,7 @@ class HomeController extends GetxController {
     if (_readingPipe) return;
     _readingPipe = true;
     try {
-      final plugin = _vpn.status.value;
+      final plugin = _vpn.latest;
       var up = plugin.uploadSpeed.toDouble();
       var down = plugin.downloadSpeed.toDouble();
       if (up <= 0 && down <= 0) {

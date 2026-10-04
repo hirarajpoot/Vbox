@@ -15,12 +15,20 @@ class StorageService {
 
   Future<void> init() async {
     await Hive.initFlutter();
-    _configs = await Hive.openBox('configs');
-    _subs = await Hive.openBox('subscriptionsBox');
-    _settings = await Hive.openBox('settings');
-    _logs = await Hive.openBox('logs');
-    _appSettings = await Hive.openBox('appSettings');
-    _servers = await Hive.openBox('serversBox');
+    final opened = await Future.wait([
+      Hive.openBox('configs'),
+      Hive.openBox('subscriptionsBox'),
+      Hive.openBox('settings'),
+      Hive.openBox('logs'),
+      Hive.openBox('appSettings'),
+      Hive.openBox('serversBox'),
+    ]);
+    _configs = opened[0];
+    _subs = opened[1];
+    _settings = opened[2];
+    _logs = opened[3];
+    _appSettings = opened[4];
+    _servers = opened[5];
     await _migrateLegacySubscriptions();
     if (!_appSettings.containsKey('isFirstLaunch')) {
       final existing = loadSettings();
