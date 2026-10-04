@@ -9,6 +9,7 @@ import 'package:vbox/data/models/app_settings.dart';
 import 'package:vbox/data/models/subscription.dart';
 import 'package:vbox/data/models/vpn_config.dart';
 import 'package:vbox/data/services/subscription_service.dart';
+import 'package:vbox/data/services/telemetry_service.dart';
 import 'package:vbox/data/services/v2ray_service.dart';
 
 class ConfigController extends GetxController {
@@ -100,6 +101,9 @@ class ConfigController extends GetxController {
     }
     if (added > 0 && selected == null) {
       await select(configs.first);
+    }
+    if (added > 0) {
+      await TelemetryService.instance.event('config_import', {'count': added});
     }
     configs.refresh();
     return added;

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "869332222452",
+    "project_id": "vbox-f3a9c",
+    "storage_bucket": "vbox-f3a9c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:869332222452:android:bae3b3cd66ff7b3c08b9a1",
+        "android_client_info": {
+          "package_name": "com.vbox.vbox"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCcSYKlOpPioaocSMuBYzLPy0a_SKcaI3s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

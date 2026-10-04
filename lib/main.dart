@@ -3,10 +3,15 @@ import 'package:get/get.dart';
 import 'package:vbox/app.dart';
 import 'package:vbox/core/bindings/initial_binding.dart';
 import 'package:vbox/data/local/storage_service.dart';
+import 'package:vbox/data/services/telemetry_service.dart';
 import 'package:vbox/data/services/v2ray_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  final telemetry = TelemetryService();
+  await telemetry.init();
+  Get.put<TelemetryService>(telemetry, permanent: true);
 
   final storage = StorageService();
   await storage.init();

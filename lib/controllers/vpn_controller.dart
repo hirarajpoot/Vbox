@@ -5,6 +5,7 @@ import 'package:vbox/platform/v2ray_plugin.dart';
 import 'package:vbox/controllers/config_controller.dart';
 import 'package:vbox/controllers/settings_controller.dart';
 import 'package:vbox/data/models/vpn_config.dart';
+import 'package:vbox/data/services/telemetry_service.dart';
 import 'package:vbox/data/services/v2ray_service.dart';
 
 class VpnController extends GetxController {
@@ -74,10 +75,16 @@ class VpnController extends GetxController {
         if (target != null) await _configs.select(target);
       }
       if (target == null) {
+        await TelemetryService.instance.event('vpn_connect_fail', {
+          'reason': 'no_server',
+        });
         Get.snackbar('No server', 'Add a VMess or Shadowsocks config first');
         return;
       }
       if (!_v2ray.isAvailable) {
+        await TelemetryService.instance.event('vpn_connect_fail', {
+          'reason': 'core_unavailable',
+        });
         Get.snackbar(
           kIsWeb ? 'Web preview' : 'Android required',
           kIsWeb
@@ -92,6 +99,9 @@ class VpnController extends GetxController {
       if (!_settings.settings.proxyOnly) {
         final allowed = await _v2ray.requestPermission();
         if (!allowed) {
+          await TelemetryService.instance.event('vpn_connect_fail', {
+            'reason': 'permission',
+          });
           Get.snackbar('Permission denied', 'VPN permission is required');
           return;
         }
@@ -99,8 +109,16 @@ class VpnController extends GetxController {
       await _settings.log('Connecting to ${target.remark}');
       await _v2ray.start(config: target, settings: _settings.settings);
       connectedPing.value = await _v2ray.pingConnected();
-    } catch (error) {
+      await TelemetryService.instance.event('vpn_connect', {
+        'protocol': target.protocol,
+        'smart': _settings.settings.smartConnect ? 1 : 0,
+      });
+    } catch (error, stack) {
       await _settings.log('Connect failed: $error');
+      await TelemetryService.instance.event('vpn_connect_fail', {
+        'reason': 'exception',
+      });
+      await TelemetryService.instance.error(error, stack);
       Get.snackbar('Connect failed', error.toString());
     } finally {
       busy.value = false;
@@ -111,6 +129,7 @@ class VpnController extends GetxController {
     _userStopped = true;
     await _v2ray.stop();
     connectedPing.value = null;
+    await TelemetryService.instance.event('vpn_disconnect');
   }
 
   void _scheduleReconnect() {
