@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -21,7 +20,6 @@ class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   late final AnimationController _spin;
   late final AnimationController _bar;
-  Timer? _navTimer;
   var _leaving = false;
 
   @override
@@ -33,18 +31,16 @@ class _SplashScreenState extends State<SplashScreen>
     )..repeat();
     _bar = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..forward();
-    _navTimer = Timer(const Duration(milliseconds: 1100), _leave);
+      duration: const Duration(milliseconds: 2100),
+    )..addStatusListener((status) {
+        if (status == AnimationStatus.completed) _leave();
+      })
+      ..forward();
   }
 
   Future<void> _leave() async {
     if (!mounted || _leaving) return;
     _leaving = true;
-    _navTimer?.cancel();
-    _navTimer = null;
-    _spin.stop();
-    _bar.stop();
 
     final box = Hive.box('appSettings');
     final isFirstLaunch = box.get('isFirstLaunch', defaultValue: true) == true;
@@ -52,19 +48,11 @@ class _SplashScreenState extends State<SplashScreen>
       await box.put('isFirstLaunch', false);
     }
     if (!mounted) return;
-
-    final dest = isFirstLaunch ? AppRoutes.onboarding : AppRoutes.shell;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      Get.offAllNamed(dest);
-    });
+    Get.offAllNamed(isFirstLaunch ? AppRoutes.onboarding : AppRoutes.shell);
   }
 
   @override
   void dispose() {
-    _navTimer?.cancel();
-    _spin.stop();
-    _bar.stop();
     _spin.dispose();
     _bar.dispose();
     super.dispose();
