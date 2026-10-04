@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -5,6 +7,7 @@ import 'package:vbox/platform/v2ray_plugin.dart';
 import 'package:vbox/controllers/config_controller.dart';
 import 'package:vbox/controllers/settings_controller.dart';
 import 'package:vbox/data/models/vpn_config.dart';
+import 'package:vbox/data/services/ads_service.dart';
 import 'package:vbox/data/services/telemetry_service.dart';
 import 'package:vbox/data/services/v2ray_service.dart';
 
@@ -28,6 +31,7 @@ class VpnController extends GetxController {
   bool get isConnecting => status.value.state.toUpperCase() == 'CONNECTING';
   bool get isDisconnected => !isConnected && !isConnecting;
   bool get coreAvailable => _v2ray.isAvailable;
+  bool get stoppedByUser => _userStopped;
 
   @override
   void onInit() {
@@ -136,6 +140,7 @@ class VpnController extends GetxController {
     await _v2ray.stop();
     connectedPing.value = null;
     await TelemetryService.instance.event('vpn_disconnect');
+    unawaited(AdsService.instance.onUserStoppedTunnel());
   }
 
   void _scheduleReconnect() {

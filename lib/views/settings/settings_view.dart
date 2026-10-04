@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:vbox/controllers/settings_controller.dart';
 import 'package:vbox/core/theme/app_colors.dart';
+import 'package:vbox/data/services/ads_service.dart';
 import 'package:vbox/shared/widgets/espresso_field.dart';
 import 'package:vbox/shared/widgets/row_tile.dart';
 import 'package:vbox/shared/widgets/section_card.dart';
@@ -146,6 +147,25 @@ class SettingsScreen extends StatelessWidget {
                                 onTap: () =>
                                     Get.to(() => const SpeedTestScreen()),
                               ),
+                              Divider(
+                                color: AppColors.border.withValues(alpha: 0.7),
+                                height: 1,
+                                thickness: 1,
+                              ),
+                              Obx(() {
+                                final ads = Get.isRegistered<AdsService>()
+                                    ? Get.find<AdsService>()
+                                    : null;
+                                return RowTile(
+                                  icon: LucideIcons.tv,
+                                  title: 'Test ad',
+                                  trailingText: ads?.status.value ?? 'off',
+                                  onTap: () =>
+                                      AdsService.instance.showInterstitial(
+                                    force: true,
+                                  ),
+                                );
+                              }),
                               Divider(
                                 color: AppColors.border.withValues(alpha: 0.7),
                                 height: 1,

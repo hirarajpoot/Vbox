@@ -30,6 +30,8 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
 <p>Server configs, subscriptions, DNS and routing preferences, connection logs and lifetime traffic counters are stored locally (Hive).</p>
 <h2>What we do not collect</h2>
 <p>No login and no logging of which sites you visit. Anonymous crash reports (Firebase Crashlytics) and usage events such as connect or import (Firebase Analytics) are sent so we can fix bugs. Subscription URLs are fetched only when you add or refresh them.</p>
+<h2>Ads</h2>
+<p>When the tunnel is idle, VBox may show Unity Ads (a small banner, and occasionally a full-screen ad after you stop a session). Ads are not shown on splash, while connecting, or while the tunnel is live. Unity may use the advertising ID to serve those ads.</p>
 <h2>Permissions</h2>
 <p>VPN permission tunnels traffic through your chosen VMess / Shadowsocks / V2Ray server on Android. Camera is used only for QR scan. Notifications are used for the Android VPN service.</p>
 </body>
@@ -115,6 +117,20 @@ class PrivacyView extends StatelessWidget {
           SizedBox(height: 8),
           Text(
             'No login and no logging of which sites you visit. Anonymous crash reports (Firebase Crashlytics) and usage events such as connect or import (Firebase Analytics) are sent so we can fix bugs. Subscription URLs are fetched only when you add or refresh them.',
+            style: TextStyle(color: AppColors.textSecondary, height: 1.55),
+          ),
+          SizedBox(height: 20),
+          Text(
+            'Ads',
+            style: TextStyle(
+              color: AppColors.copper,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'When the tunnel is idle, VBox may show Unity Ads (a small banner, and occasionally a full-screen ad after you stop a session). Ads are not shown on splash, while connecting, or while the tunnel is live. Unity may use the advertising ID to serve those ads.',
             style: TextStyle(color: AppColors.textSecondary, height: 1.55),
           ),
           SizedBox(height: 20),

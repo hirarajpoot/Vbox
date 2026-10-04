@@ -7,6 +7,7 @@ import 'package:vbox/core/theme/app_colors.dart';
 import 'package:vbox/data/models/app_settings.dart';
 import 'package:vbox/shared/widgets/custom_switch.dart';
 import 'package:vbox/shared/widgets/espresso_field.dart';
+import 'package:vbox/shared/widgets/idle_banner_ad.dart';
 import 'package:vbox/shared/widgets/pill_button.dart';
 import 'package:vbox/views/home/widgets/server_selector_sheet.dart';
 import 'package:vbox/views/settings/routing_view.dart';
@@ -48,6 +49,7 @@ class HomeScreen extends StatelessWidget {
                       ],
                     ),
                   ),
+                  const IdleBannerAd(),
                 ],
               ),
             ),
